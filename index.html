@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b0f1a">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏋️</text></svg>">
+<title>深蹲计数器 · Squat Counter</title>
+<style>
+  :root {
+    --bg: #0b0f1a;
+    --bg2: #101828;
+    --card: rgba(255,255,255,.05);
+    --line: rgba(255,255,255,.09);
+    --text: #e8edf7;
+    --dim: #8b95ab;
+    --cyan: #22d3ee;
+    --cyan-deep: #0891b2;
+    --orange: #fb923c;
+    --green: #34d399;
+    --red: #f87171;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", "Noto Sans SC", sans-serif;
+    background: radial-gradient(1200px 600px at 50% -10%, #16203a 0%, var(--bg) 55%) fixed, var(--bg);
+    color: var(--text);
+    touch-action: manipulation;
+    -webkit-user-select: none; user-select: none;
+    padding: max(12px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom));
+  }
+  .wrap { max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; min-height: 100dvh; }
+
+  /* 顶部 */
+  .topbar { display: flex; align-items: center; justify-content: space-between; }
+  .topbar h1 { font-size: 17px; font-weight: 700; letter-spacing: .5px; }
+  .badge {
+    font-size: 11px; padding: 4px 10px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--dim); background: var(--card);
+  }
+  .badge.ok { color: var(--green); border-color: rgba(52,211,153,.4); }
+  .badge.demo { color: var(--orange); border-color: rgba(251,146,60,.4); }
+  .badge.warn { color: var(--red); border-color: rgba(248,113,113,.4); }
+
+  .https-tip {
+    display: none; font-size: 12px; line-height: 1.6; padding: 10px 12px; border-radius: 12px;
+    background: rgba(251,146,60,.12); border: 1px solid rgba(251,146,60,.35); color: #ffd9ae;
+  }
+  .https-tip.show { display: block; }
+
+  /* 计数主区 */
+  .hero {
+    position: relative; text-align: center; padding: 18px 0 10px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 22px;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: ""; position: absolute; inset: -40% -20% auto; height: 130%;
+    background: radial-gradient(50% 60% at 50% 30%, rgba(34,211,238,.12), transparent 70%);
+    pointer-events: none;
+  }
+  .state-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 2px; position: relative; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #64748b; transition: background .2s; }
+  .dot.stand { background: var(--green); box-shadow: 0 0 10px var(--green); }
+  .dot.dip { background: var(--orange); box-shadow: 0 0 10px var(--orange); }
+  .dot.rise { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+  .state-text { font-size: 13px; color: var(--dim); }
+  .count {
+    position: relative; display: inline-block;
+    font-size: 92px; font-weight: 800; line-height: 1.05;
+    font-variant-numeric: tabular-nums; letter-spacing: -2px;
+    color: var(--text); text-shadow: 0 6px 40px rgba(34,211,238,.25);
+  }
+  .count.bump { animation: pop .32s ease; }
+  @keyframes pop { 30% { transform: scale(1.16); color: var(--orange); } }
+  .count-label { display: block; font-size: 12px; color: var(--dim); letter-spacing: 3px; }
+  .plus-one {
+    position: absolute; left: 50%; top: 34%; transform: translateX(-50%);
+    font-size: 30px; font-weight: 800; color: var(--orange);
+    animation: riseUp .8s ease-out forwards; pointer-events: none;
+  }
+  @keyframes riseUp { from { opacity: 1; translate: 0 0; } to { opacity: 0; translate: 0 -70px; } }
+
+  /* 波形卡片 */
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 14px; }
+  .chart-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .chart-head .t { font-size: 13px; font-weight: 600; }
+  .chart-head .thr { font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
+  #chart { width: 100%; height: 150px; display: block; }
+
+  /* 统计 */
+  .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px 8px; text-align: center; }
+  .stat .v { display: block; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat .k { display: block; font-size: 11px; color: var(--dim); margin-top: 3px; }
+
+  /* 按钮 */
+  .controls { display: grid; grid-template-columns: 1.7fr 1fr; gap: 10px; }
+  button {
+    font-family: inherit; font-size: 16px; font-weight: 700; color: var(--text);
+    border-radius: 16px; padding: 15px 10px; cursor: pointer; transition: transform .06s, opacity .2s;
+    border: 1px solid var(--line); background: var(--card);
+  }
+  button:active { transform: scale(.97); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--cyan) 0%, var(--cyan-deep) 100%);
+    color: #04121a; border: none;
+    box-shadow: 0 8px 24px rgba(34,211,238,.28);
+  }
+  .btn-primary.stop { background: linear-gradient(135deg, #f59e0b, #ea580c); color: #1a0a02; box-shadow: 0 8px 24px rgba(245,158,11,.25); }
+
+  /* 设置 */
+  .setting-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+  .setting-row .k { color: var(--dim); }
+  .setting-row .v { font-weight: 700; font-variant-numeric: tabular-nums; }
+  input[type=range] {
+    width: 100%; margin: 14px 0 4px; height: 28px; appearance: none; -webkit-appearance: none; background: transparent;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 6px; border-radius: 3px;
+    background: linear-gradient(90deg, var(--cyan) var(--fill, 55%), rgba(255,255,255,.12) var(--fill, 55%));
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 22px; height: 22px; margin-top: -8px; border-radius: 50%;
+    background: #fff; border: 5px solid var(--cyan); box-shadow: 0 2px 10px rgba(0,0,0,.4);
+  }
+  .range-hint { display: flex; justify-content: space-between; font-size: 11px; color: var(--dim); }
+  .demo-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line);
+  }
+  .demo-row .k2 { display: block; font-size: 13px; font-weight: 600; }
+  .demo-row .k3 { display: block; font-size: 11px; color: var(--dim); margin-top: 2px; }
+  .switch { position: relative; width: 50px; height: 30px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider-sw {
+    position: absolute; inset: 0; border-radius: 999px; background: rgba(255,255,255,.14);
+    transition: .2s; cursor: pointer;
+  }
+  .slider-sw::before {
+    content: ""; position: absolute; width: 24px; height: 24px; border-radius: 50%;
+    left: 3px; top: 3px; background: #fff; transition: .2s;
+  }
+  .switch input:checked + .slider-sw { background: var(--cyan); }
+  .switch input:checked + .slider-sw::before { transform: translateX(20px); }
+
+  /* 帮助 */
+  details { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 4px 16px; }
+  summary { font-size: 13px; font-weight: 600; padding: 12px 0; cursor: pointer; color: var(--dim); list-style: none; display: flex; justify-content: space-between; }
+  summary::after { content: "▾"; transition: transform .2s; }
+  details[open] summary::after { transform: rotate(180deg); }
+  .help-body { font-size: 12.5px; line-height: 1.9; color: #aeb8cc; padding-bottom: 12px; }
+  .help-body b { color: var(--text); }
+  .help-body .li { display: block; }
+  .help-body h4 { margin: 8px 0 2px; font-size: 12.5px; color: var(--cyan); }
+
+  footer { text-align: center; font-size: 10.5px; color: #55607a; padding: 4px 0 10px; line-height: 1.7; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%);
+    background: rgba(20,26,44,.95); border: 1px solid var(--line); color: var(--text);
+    padding: 10px 18px; border-radius: 14px; font-size: 13px; max-width: 86vw; text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,.5); z-index: 99;
+    opacity: 0; pointer-events: none; transition: opacity .25s;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <h1>🏋️ 深蹲计数器</h1>
+    <div class="badge" id="badge">未启动</div>
+  </div>
+
+  <div class="https-tip" id="httpsTip">
+    ⚠️ 当前非 HTTPS 环境：iPhone 的 Safari 要求页面必须通过 <b>https://</b> 访问才允许读取运动传感器。请将本文件部署到任意 HTTPS 静态托管（如 GitHub Pages、Vercel）后再在手机上打开；当前可先使用「演示模式」体验。
+  </div>
+
+  <div class="hero" id="hero">
+    <div class="state-row">
+      <div class="dot" id="dot"></div>
+      <span class="state-text" id="stateText">待开始</span>
+    </div>
+    <span class="count" id="count">0</span>
+    <span class="count-label">累计深蹲 · 次</span>
+  </div>
+
+  <div class="card">
+    <div class="chart-head">
+      <span class="t">运动信号</span>
+      <span class="thr" id="thrText">触发阈值 ±1.3 m/s²</span>
+    </div>
+    <canvas id="chart"></canvas>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><span class="v" id="dur">00:00</span><span class="k">运动时长</span></div>
+    <div class="stat"><span class="v" id="pace">--</span><span class="k">节奏 个/分</span></div>
+    <div class="stat"><span class="v" id="kcal">0.0</span><span class="k">热量 ≈千卡</span></div>
+  </div>
+
+  <div class="controls">
+    <button class="btn-primary" id="btnStart">启用传感器并开始</button>
+    <button id="btnReset">重置</button>
+  </div>
+
+  <div class="card">
+    <div class="setting-row">
+      <span class="k">检测灵敏度</span>
+      <span class="v" id="sensVal">适中（6/10）</span>
+    </div>
+    <input type="range" id="sens" min="1" max="10" step="1" value="6">
+    <div class="range-hint"><span>◀ 防误计（更稳）</span><span>更灵敏（防漏计）▶</span></div>
+    <div class="demo-row">
+      <div>
+        <span class="k2">演示模式</span>
+        <span class="k3">电脑 / 无传感器设备上模拟数据体验</span>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="demoSw">
+        <span class="slider-sw"></span>
+      </label>
+    </div>
+  </div>
+
+  <details>
+    <summary>使用说明与原理</summary>
+    <div class="help-body">
+      <h4>📱 手机放置</h4>
+      <span class="li">· 推荐：<b>手机放裤兜</b>（任意朝向均可）或手持贴于胸口</span>
+      <span class="li">· 也可绑在手臂上（臂包）</span>
+      <h4>🏋️ 计数技巧</h4>
+      <span class="li">· 点击开始后，先<b>原地静止站立约 2 秒</b>完成自动校准</span>
+      <span class="li">· 保持<b>1~2 秒/次</b>的节奏，下蹲到底稍作停顿再起身，计数最准</span>
+      <span class="li">· 动作过慢（>4 秒/次）信号会减弱，可能漏计</span>
+      <span class="li">· 请<b>原地练习</b>，边走边蹲会引入干扰</span>
+      <h4>🎚 灵敏度</h4>
+      <span class="li">· 出现<b>漏计</b> → 调高灵敏度；出现<b>误计</b> → 调低</span>
+      <span class="li">· 观察上方波形：正常深蹲会呈现清晰的「下潜→冲高」波形，越过虚线即被识别</span>
+      <h4>🧠 原理</h4>
+      <span class="li">· 通过 DeviceMotion 读取三轴加速度（含重力），计算合加速度模长</span>
+      <span class="li">· 下蹲时先「失重」（模长低于基线）、蹲底急停「超重」（模长高于基线），起身相反</span>
+      <span class="li">· 状态机识别「失重谷 → 超重峰 → 回落」的完整周期，并校验节奏时长（0.3~2.2s）以过滤走路、抖动等干扰</span>
+      <h4>🔒 隐私</h4>
+      <span class="li">· 传感器数据仅在浏览器本地处理，不上传任何服务器</span>
+      <h4>🚀 部署到 iPhone</h4>
+      <span class="li">· 将本文件（index.html）上传到任意 HTTPS 静态托管：GitHub Pages / Vercel / Netlify 拖拽即用</span>
+      <span class="li">· 用 Safari 打开后可「添加到主屏幕」，像原生 App 一样全屏使用</span>
+    </div>
+  </details>
+
+  <footer>Squat Counter · 纯前端本地运行<br>数据与统计不做任何上传</footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+'use strict';
+
+/* ============================================================
+ * 深蹲检测器 —— 纯逻辑，与微信小程序版共用同一算法
+ * 原理：合加速度模长 = sqrt(x²+y²+z²)，静止时 ≈ 重力 g。
+ * 一次深蹲 = 下蹲失重(谷) → 蹲底超重(峰) → 回落稳定。
+ * 用状态机 + 节奏时长约束过滤走路/抖动干扰。
+ * ============================================================ */
+class SquatDetector {
+  constructor(factor = 0.135) {
+    this.factor = factor;      // 触发阈值 = factor × 基线模长（相对 g，兼容不同单位机型）
+    this.minCycleMs = 900;     // 两次计数最小间隔（防抖）
+    this.maxCycleMs = 6000;    // 周期超时
+    this.minDipMs = 280;       // 谷→峰 最短时长（过滤步频 ~2Hz 的干扰）
+    this.maxDipMs = 2200;      // 谷→峰 最长时长
+    this.confirmN = 3;         // 连续采样确认数（滤除冲击尖峰）
+    this.reset();
+  }
+  reset() {
+    this.baseline = null; this.smooth = 0; this.phase = 0;
+    this.troughT = 0; this.count = 0; this.lastCountT = 0;
+    this._under = 0; this._over = 0; this._n = 0;
+  }
+  /** @returns {{counted:boolean, phase:number, smooth:number}} */
+  feed(ax, ay, az, t) {
+    const mag = Math.hypot(ax, ay, az);
+    if (this.baseline === null) this.baseline = mag;
+    // 基线：前 60 个采样快速收敛（校准），之后极慢跟随
+    const a = this._n < 60 ? 0.05 : 0.008;
+    this.baseline += (mag - this.baseline) * a;
+    this._n++;
+    // 快速平滑动态分量
+    const delta = mag - this.baseline;
+    this.smooth += (delta - this.smooth) * 0.28;
+
+    const T = this.factor * Math.max(this.baseline, 1);
+    let counted = false;
+
+    if (this.phase === 0) {                    // 站立：等待失重谷（下蹲开始）
+      if (this.smooth < -T) {
+        if (++this._under >= this.confirmN) { this.phase = 1; this.troughT = t; this._under = 0; }
+      } else this._under = 0;
+    } else if (this.phase === 1) {             // 下蹲中：等待超重峰（蹲底急停）
+      if (this.smooth > T) {
+        if (++this._over >= this.confirmN) {
+          const dt = t - this.troughT;
+          if (dt >= this.minDipMs && dt <= this.maxDipMs) { this.phase = 2; this.troughT = t; }
+          else this.phase = 0;                 // 节奏不符 → 视为噪声
+          this._over = 0;
+        }
+      } else this._over = 0;
+      if (this.phase === 1 && t - this.troughT > this.maxCycleMs) { this.phase = 0; this._over = 0; }
+    } else {                                   // 起身/回落：信号回落即计一次
+      if (Math.abs(this.smooth) < T * 0.5) {
+        if (t - this.lastCountT >= this.minCycleMs) { this.count++; counted = true; }
+        this.lastCountT = t;
+        this.phase = 0;
+      } else if (t - this.troughT > this.maxCycleMs) this.phase = 0;
+    }
+    return { counted, phase: this.phase, smooth: this.smooth };
+  }
+}
+
+/* ---------------- DOM ---------------- */
+const $ = (id) => document.getElementById(id);
+const els = {
+  badge: $('badge'), hero: $('hero'), dot: $('dot'), stateText: $('stateText'),
+  count: $('count'), thrText: $('thrText'), dur: $('dur'), pace: $('pace'), kcal: $('kcal'),
+  btnStart: $('btnStart'), btnReset: $('btnReset'), sens: $('sens'), sensVal: $('sensVal'),
+  demoSw: $('demoSw'), toast: $('toast'), httpsTip: $('httpsTip'), chart: $('chart'),
+};
+
+/* ---------------- 全局状态 ---------------- */
+const detector = new SquatDetector(0.135);
+let running = false, demo = false;
+let count = 0, elapsed = 0, lastTs = 0;
+let samples = [];                 // {t, s, c}
+let sensorBound = false, sensorAlive = false, sensorCheckTimer = null;
+let demoTimer = null, demoT0 = 0, lastPhase = -1, calibrating = false;
+let toastTimer = null;
+
+const PHASE_TEXT = { 0: '站立', 1: '下蹲中…', 2: '起身中…' };
+const PHASE_DOT = { 0: 'stand', 1: 'dip', 2: 'rise' };
+
+/* ---------------- 工具 ---------------- */
+function toast(msg, ms = 2600) {
+  els.toast.textContent = msg;
+  els.toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => els.toast.classList.remove('show'), ms);
+}
+function factorFromSens(s) { return +(((2.4 - s * 0.18) / 9.81).toFixed(4)); }
+function thrTextOf(s) { return (2.4 - s * 0.18).toFixed(1); }
+function sensLabel(s) { return s <= 3 ? '防误计' : s >= 8 ? '高灵敏' : '适中'; }
+function fmtDur(sec) {
+  const m = Math.floor(sec / 60), s = Math.floor(sec % 60);
+  return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+/* ---------------- 数据入口 ---------------- */
+function feedSample(x, y, z, t) {
+  const ev = detector.feed(x, y, z, t);
+  samples.push({ t, s: ev.smooth, c: ev.counted });
+  while (samples.length && t - samples[0].t > 12000) samples.shift();
+  if (ev.counted) onCount();
+  if (ev.phase !== lastPhase) {
+    lastPhase = ev.phase;
+    if (calibrating) { els.stateText.textContent = '校准中，请静止站立…'; els.dot.className = 'dot'; }
+    else { els.stateText.textContent = PHASE_TEXT[ev.phase]; els.dot.className = 'dot ' + PHASE_DOT[ev.phase]; }
+  }
+}
+
+function onCount() {
+  count++;
+  els.count.textContent = count;
+  els.count.classList.remove('bump'); void els.count.offsetWidth; els.count.classList.add('bump');
+  const p = document.createElement('div');
+  p.className = 'plus-one'; p.textContent = '+1';
+  els.hero.appendChild(p);
+  setTimeout(() => p.remove(), 850);
+  if (navigator.vibrate) navigator.vibrate(35);
+  updateStats();
+}
+
+function updateStats() {
+  els.dur.textContent = fmtDur(elapsed);
+  els.pace.textContent = (elapsed > 10 && count > 0) ? (count / (elapsed / 60)).toFixed(1) : '--';
+  els.kcal.textContent = (count * 0.45).toFixed(1);
+}
+
+/* 每秒计时与状态刷新 */
+setInterval(() => {
+  if (!running) return;
+  const now = performance.now();
+  elapsed += (now - lastTs) / 1000;
+  lastTs = now;
+  updateStats();
+  if (calibrating && elapsed >= 2) {
+    calibrating = false;
+    els.stateText.textContent = PHASE_TEXT[0];
+    els.dot.className = 'dot stand';
+  }
+}, 500);
+
+/* ---------------- 传感器 ---------------- */
+async function ensureSensor() {
+  if (sensorBound) return true;
+  if (typeof DeviceMotionEvent === 'undefined') {
+    toast('当前浏览器不支持运动传感器，试试开启「演示模式」');
+    return false;
+  }
+  // iOS 13+ 必须在用户手势内请求权限
+  if (typeof DeviceMotionEvent.requestPermission === 'function') {
+    try {
+      const r = await DeviceMotionEvent.requestPermission();
+      if (r !== 'granted') {
+        toast('传感器权限被拒绝：iPhone 设置 › Safari › 高级 › 网站数据 中允许后重试', 4000);
+        return false;
+      }
+    } catch (err) {
+      toast('请求传感器权限失败：' + (err && err.message ? err.message : '未知错误'));
+      return false;
+    }
+  }
+  window.addEventListener('devicemotion', onMotion);
+  sensorBound = true;
+  return true;
+}
+
+function onMotion(e) {
+  const a = e.accelerationIncludingGravity;
+  if (!a || (a.x == null && a.y == null && a.z == null)) return;
+  sensorAlive = true;
+  if (!running || demo) return;
+  feedSample(a.x || 0, a.y || 0, a.z || 0, performance.now());
+}
+
+/* ---------------- 演示模式（合成深蹲信号） ---------------- */
+function synthSquat(sec) {
+  const period = 1.5;                                  // 1.5 秒/次
+  const p = (sec % period) / period;
+  const A = 2.6;                                       // 信号幅度 m/s²
+  const g = (c, w) => Math.exp(-(((p - c) / w) ** 2)); // 高斯波包
+  //        下蹲失重      蹲底超重      起身超重      起身失重
+  const d = -A * g(0.08, 0.055) + A * g(0.32, 0.05) + A * g(0.58, 0.05) - A * g(0.84, 0.055);
+  return 9.81 + d + (Math.random() - 0.5) * 0.3;
+}
+function startDemoLoop() {
+  demoT0 = performance.now();
+  demoTimer = setInterval(() => {
+    const t = performance.now();
+    const mag = synthSquat((t - demoT0) / 1000);
+    feedSample(0, mag, 0, t);
+  }, 16);
+}
+function stopDemoLoop() { clearInterval(demoTimer); demoTimer = null; }
+
+/* ---------------- 开始 / 暂停 / 重置 ---------------- */
+function setRunningUI() {
+  els.btnStart.textContent = running ? '暂停' : (demo ? '开始（演示）' : '开始');
+  els.btnStart.classList.toggle('stop', running);
+  els.badge.textContent = demo ? '演示模式' : (running ? '传感器工作中' : (sensorBound ? '传感器就绪' : '未启动'));
+  els.badge.className = 'badge ' + (demo ? 'demo' : (running || sensorBound ? 'ok' : ''));
+}
+
+async function onPrimary() {
+  if (running) { pause(); return; }
+  if (demo) {
+    startRun(true);
+    return;
+  }
+  const ok = await ensureSensor();
+  if (!ok) return;
+  startRun(false);
+  // 2.5s 内没有收到有效传感器数据 → 提示切演示
+  sensorCheckTimer = setTimeout(() => {
+    if (running && !demo && !sensorAlive) {
+      pause();
+      toast('未检测到运动传感器（可能是电脑或权限受限），已可开启「演示模式」体验', 4000);
+    }
+  }, 2500);
+}
+
+function startRun(isDemo) {
+  running = true;
+  lastTs = performance.now();
+  if (!isDemo) {
+    calibrating = true;
+    els.stateText.textContent = '校准中，请静止站立…';
+    els.dot.className = 'dot';
+  } else {
+    els.stateText.textContent = PHASE_TEXT[0];
+    els.dot.className = 'dot stand';
+  }
+  if (isDemo) startDemoLoop();
+  setRunningUI();
+}
+
+function pause() {
+  running = false;
+  calibrating = false;
+  clearTimeout(sensorCheckTimer);
+  if (demo) stopDemoLoop();
+  els.stateText.textContent = '已暂停';
+  els.dot.className = 'dot';
+  setRunningUI();
+}
+
+function onReset() {
+  const wasRunning = running;
+  running = false;
+  clearTimeout(sensorCheckTimer);
+  if (demo) stopDemoLoop();
+  count = 0; elapsed = 0; lastPhase = -1;
+  detector.reset(); samples = [];
+  els.count.textContent = '0';
+  els.stateText.textContent = demo ? '演示就绪' : '待开始';
+  els.dot.className = 'dot';
+  updateStats();
+  setRunningUI();
+  if (wasRunning) toast('已重置');
+}
+
+/* ---------------- 灵敏度 / 演示开关 ---------------- */
+function applySens(s) {
+  detector.factor = factorFromSens(s);
+  els.sensVal.textContent = `${sensLabel(s)}（${s}/10）`;
+  els.thrText.textContent = `触发阈值 ±${thrTextOf(s)} m/s²`;
+  els.sens.style.setProperty('--fill', ((s - 1) / 9 * 100) + '%');
+  try { localStorage.setItem('squat_sens', s); } catch (e) {}
+}
+els.sens.addEventListener('input', (e) => applySens(+e.target.value));
+
+els.demoSw.addEventListener('change', (e) => {
+  const on = e.target.checked;
+  if (running) pause();
+  onReset();
+  demo = on;
+  if (demo) {
+    els.stateText.textContent = '演示就绪';
+    toast('演示模式已开启：将模拟每 1.5 秒一次的深蹲信号');
+  }
+  setRunningUI();
+});
+
+els.btnStart.addEventListener('click', onPrimary);
+els.btnReset.addEventListener('click', onReset);
+
+/* ---------------- 波形绘制 ---------------- */
+const cv = els.chart, ctx = cv.getContext('2d');
+let cw = 0, ch = 0;
+function resize() {
+  const dpr = window.devicePixelRatio || 1;
+  cw = cv.clientWidth; ch = cv.clientHeight;
+  cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', resize);
+
+function draw(now) {
+  if (cw !== cv.clientWidth) resize();
+  ctx.clearRect(0, 0, cw, ch);
+  const winMs = 10000, t0 = now - winMs;
+  const baseline = detector.baseline || 9.81;
+  const yRange = 0.42 * baseline;
+  const T = detector.factor * baseline;
+  const yOf = (s) => ch / 2 - (s / yRange) * (ch / 2 - 6);
+  const xOf = (t) => ((t - t0) / winMs) * cw;
+
+  // 中线
+  ctx.strokeStyle = 'rgba(255,255,255,.14)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, ch / 2); ctx.lineTo(cw, ch / 2); ctx.stroke();
+  // 阈值虚线
+  ctx.strokeStyle = 'rgba(251,146,60,.55)'; ctx.setLineDash([5, 5]);
+  [T, -T].forEach((v) => { const y = yOf(v); ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cw, y); ctx.stroke(); });
+  ctx.setLineDash([]);
+
+  // 信号曲线
+  if (samples.length) {
+    ctx.beginPath();
+    let started = false;
+    for (const p of samples) {
+      if (p.t < t0) continue;
+      const x = xOf(p.t), y = Math.max(3, Math.min(ch - 3, yOf(p.s)));
+      started ? ctx.lineTo(x, y) : (ctx.moveTo(x, y), started = true);
+    }
+    ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+    ctx.shadowColor = 'rgba(34,211,238,.5)'; ctx.shadowBlur = 6;
+    ctx.stroke(); ctx.shadowBlur = 0;
+    // 计数标记
+    for (const p of samples) {
+      if (p.c && p.t >= t0) {
+        const x = xOf(p.t), y = Math.max(8, yOf(p.s));
+        ctx.fillStyle = '#fb923c';
+        ctx.beginPath(); ctx.arc(x, y - 10, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = 'rgba(251,146,60,.6)'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(x, y - 5); ctx.lineTo(x, ch - 4); ctx.stroke();
+      }
+    }
+  } else {
+    ctx.fillStyle = 'rgba(139,149,171,.7)'; ctx.font = '12px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('开始后此处显示实时加速度波形', cw / 2, ch / 2 - 8);
+    ctx.fillText('虚线 = 触发阈值', cw / 2, ch / 2 + 12);
+  }
+  requestAnimationFrame(draw);
+}
+
+/* ---------------- 初始化 ---------------- */
+(function init() {
+  // HTTPS 环境检测（iOS 传感器硬性要求）
+  const insecure = location.protocol === 'http:' &&
+    !['localhost', '127.0.0.1'].includes(location.hostname);
+  if (insecure && typeof DeviceMotionEvent !== 'undefined') els.httpsTip.classList.add('show');
+
+  let saved = 6;
+  try { saved = +localStorage.getItem('squat_sens') || 6; } catch (e) {}
+  els.sens.value = saved;
+  applySens(saved);
+  resize();
+  requestAnimationFrame(draw);
+})();
+})();
+</script>
+</body>
+</html>
