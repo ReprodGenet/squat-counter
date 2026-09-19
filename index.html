@@ -111,6 +111,12 @@
     box-shadow: 0 8px 24px rgba(34,211,238,.28);
   }
   .btn-primary.stop { background: linear-gradient(135deg, #f59e0b, #ea580c); color: #1a0a02; box-shadow: 0 8px 24px rgba(245,158,11,.25); }
+  .btn-health {
+    background: linear-gradient(135deg, #ff375f 0%, #ff2d55 100%);
+    color: #fff; border: none; width: 100%;
+    box-shadow: 0 8px 24px rgba(255,45,85,.22);
+  }
+  .btn-health:disabled { opacity: .45; box-shadow: none; }
 
   /* 设置 */
   .setting-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
@@ -132,6 +138,14 @@
     display: flex; justify-content: space-between; align-items: center;
     margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line);
   }
+  .sc-row { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .sc-input {
+    background: rgba(255,255,255,.08); border: 1px solid var(--line); color: var(--text);
+    border-radius: 10px; padding: 7px 10px; font-size: 13px; width: 160px; text-align: right;
+    font-family: inherit; outline: none;
+  }
+  .sc-input:focus { border-color: rgba(34,211,238,.5); }
+  .sc-hint { font-size: 11px; color: var(--dim); margin-top: 6px; }
   .demo-row .k2 { display: block; font-size: 13px; font-weight: 600; }
   .demo-row .k3 { display: block; font-size: 11px; color: var(--dim); margin-top: 2px; }
   .switch { position: relative; width: 50px; height: 30px; flex: none; }
@@ -209,6 +223,8 @@
     <button id="btnReset">重置</button>
   </div>
 
+  <button class="btn-health" id="btnHealth">❤️ 记录到 iPhone 健康</button>
+
   <div class="card">
     <div class="setting-row">
       <span class="k">检测灵敏度</span>
@@ -216,6 +232,14 @@
     </div>
     <input type="range" id="sens" min="1" max="10" step="1" value="6">
     <div class="range-hint"><span>◀ 防误计（更稳）</span><span>更灵敏（防漏计）▶</span></div>
+    <div class="sc-row">
+      <div class="setting-row">
+        <span class="k">健康快捷指令名称</span>
+        <input type="text" id="scName" class="sc-input" value="记录深蹲" maxlength="20" enterkeyhint="done">
+      </div>
+      <div class="sc-hint">需与 iPhone「快捷指令」App 中创建的快捷指令同名（默认：记录深蹲）</div>
+    </div>
+
     <div class="demo-row">
       <div>
         <span class="k2">演示模式</span>
@@ -246,6 +270,12 @@
       <span class="li">· 通过 DeviceMotion 读取三轴加速度（含重力），计算合加速度模长</span>
       <span class="li">· 下蹲时先「失重」（模长低于基线）、蹲底急停「超重」（模长高于基线），起身相反</span>
       <span class="li">· 状态机识别「失重谷 → 超重峰 → 回落」的完整周期，并校验节奏时长（0.3~2.2s）以过滤走路、抖动等干扰</span>
+      <h4>❤️ 记录到 iPhone 健康（首次配置约 2 分钟）</h4>
+      <span class="li">· 在 iPhone 打开「<b>快捷指令</b>」App → 点「+」新建快捷指令 → 命名为「<b>记录深蹲</b>」</span>
+      <span class="li">· 添加动作「<b>拆分文本</b>」：文本选择「快捷指令输入」，分隔符选「自定义」填英文逗号 <b>,</b></span>
+      <span class="li">· 添加动作「<b>记录锻炼</b>」：活动类型选「功能性力量训练」；点「时长」→ 键盘上方选变量「拆分文本」→ 再点它选「列表项目 → 第 1 项」；「能量」同理选「第 2 项」</span>
+      <span class="li">· 保存后回到本页，每组练完点「❤️ 记录到 iPhone 健康」即自动写入（首次会请求健康写入权限，请允许）</span>
+      <span class="li">· 说明：健康 App 的锻炼记录没有"次数"字段，写入的是<b>训练时长 + 消耗能量</b>（可闭合健身圆环），次数保留在本页统计中</span>
       <h4>🔒 隐私</h4>
       <span class="li">· 传感器数据仅在浏览器本地处理，不上传任何服务器</span>
       <h4>🚀 部署到 iPhone</h4>
@@ -331,6 +361,7 @@ const els = {
   count: $('count'), thrText: $('thrText'), dur: $('dur'), pace: $('pace'), kcal: $('kcal'),
   btnStart: $('btnStart'), btnReset: $('btnReset'), sens: $('sens'), sensVal: $('sensVal'),
   demoSw: $('demoSw'), toast: $('toast'), httpsTip: $('httpsTip'), chart: $('chart'),
+  btnHealth: $('btnHealth'), scName: $('scName'),
 };
 
 /* ---------------- 全局状态 ---------------- */
@@ -516,6 +547,7 @@ function onReset() {
   if (demo) stopDemoLoop();
   count = 0; elapsed = 0; lastPhase = -1;
   detector.reset(); samples = [];
+  syncedSnapshot = null;
   els.count.textContent = '0';
   els.stateText.textContent = demo ? '演示就绪' : '待开始';
   els.dot.className = 'dot';
@@ -548,6 +580,44 @@ els.demoSw.addEventListener('change', (e) => {
 
 els.btnStart.addEventListener('click', onPrimary);
 els.btnReset.addEventListener('click', onReset);
+
+/* ---------------- 同步到 iPhone 健康（快捷指令桥接） ----------------
+ * Safari 网页无 HealthKit 权限，通过 shortcuts:// URL Scheme 调起
+ * 用户预建的「记录锻炼」快捷指令，把 时长(分钟),千卡 写入健康 App。
+ * ------------------------------------------------------------ */
+let syncedSnapshot = null; // {count, elapsed} 已同步的数据快照
+
+function isAppleDevice() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function syncToHealth() {
+  if (count === 0) { toast('还没有训练数据，先练一组吧 💪'); return; }
+  if (syncedSnapshot && syncedSnapshot.count === count && Math.abs(syncedSnapshot.elapsed - elapsed) < 0.5) {
+    toast('当前这组数据已同步过，继续训练或重置后再试');
+    return;
+  }
+  if (!isAppleDevice()) {
+    toast('此功能需在 iPhone 的 Safari 中使用（本机为演示环境）');
+    return;
+  }
+  const name = (els.scName.value || '记录深蹲').trim();
+  const minutes = Math.max(1, +(elapsed / 60).toFixed(1));
+  const kcal = +(count * 0.45).toFixed(1);
+  syncedSnapshot = { count, elapsed };
+  toast(`正在写入健康 App：训练 ${minutes} 分钟 · 约 ${kcal} 千卡…`, 2200);
+  // 延迟一瞬让 toast 先渲染，再跳转快捷指令
+  setTimeout(() => {
+    window.location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent(name) +
+      '&input=text&text=' + encodeURIComponent(minutes + ',' + kcal);
+  }, 350);
+}
+
+els.btnHealth.addEventListener('click', syncToHealth);
+els.scName.addEventListener('change', () => {
+  try { localStorage.setItem('squat_scname', els.scName.value.trim() || '记录深蹲'); } catch (e) {}
+});
 
 /* ---------------- 波形绘制 ---------------- */
 const cv = els.chart, ctx = cv.getContext('2d');
@@ -620,6 +690,10 @@ function draw(now) {
   try { saved = +localStorage.getItem('squat_sens') || 6; } catch (e) {}
   els.sens.value = saved;
   applySens(saved);
+  try {
+    const scName = localStorage.getItem('squat_scname');
+    if (scName) els.scName.value = scName;
+  } catch (e) {}
   resize();
   requestAnimationFrame(draw);
 })();
