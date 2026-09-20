@@ -2,748 +2,178 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="format-detection" content="telephone=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="亲密记录">
-<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#141416" media="(prefers-color-scheme: dark)">
-<title>亲密记录</title>
-<link rel="apple-touch-icon" href="icon.png">
-<link rel="icon" href="icon.png">
-<style>
-:root{
-  --bg:#f2f2f7; --card:#ffffff; --card2:#f7f7fa; --text:#1c1c1e; --text2:#8e8e93;
-  --line:rgba(0,0,0,.07); --accent:#ff5c8a; --accent2:#b06ab3; --green:#30c260; --red:#ff453a;
-  --hm0:#e8e8ee; --shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06);
-}
-@media (prefers-color-scheme: dark){
-  :root{
-    --bg:#141416; --card:#1e1e21; --card2:#28282c; --text:#f2f2f7; --text2:#98989f;
-    --line:rgba(255,255,255,.09); --hm0:#2a2a2f; --shadow:0 1px 2px rgba(0,0,0,.2),0 8px 24px rgba(0,0,0,.35);
-  }
-}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;min-width:0}
-html{-webkit-text-size-adjust:100%;overflow-x:hidden}
-body{overflow-x:hidden}
-body{
-  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Helvetica Neue",system-ui,sans-serif;
-  background:var(--bg);color:var(--text);min-height:100vh;
-  -webkit-font-smoothing:antialiased;padding-bottom:calc(96px + env(safe-area-inset-bottom));
-}
-button{font-family:inherit;border:none;background:none;color:inherit;cursor:pointer}
-input,textarea,select{font-family:inherit;font-size:16px;color:var(--text)}
-
-/* ── 顶栏 ── */
-#topbar{
-  position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;
-  padding:calc(14px + env(safe-area-inset-top)) 18px 12px;
-  background:color-mix(in srgb,var(--bg) 78%,transparent);
-  -webkit-backdrop-filter:saturate(180%) blur(18px);backdrop-filter:saturate(180%) blur(18px);
-  border-bottom:1px solid var(--line);
-}
-#topbar .title{font-size:22px;font-weight:800;letter-spacing:.2px;display:flex;align-items:baseline;gap:8px}
-#topbar .title .sub{font-size:11px;font-weight:500;color:var(--text2);letter-spacing:.4px}
-#maskBtn{width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);color:var(--text2)}
-#maskBtn.on{color:var(--accent)}
-#maskBtn svg{width:19px;height:19px}
-
-/* ── 主体 ── */
-main{padding:14px 14px 8px;max-width:560px;margin:0 auto;width:100%}
-.btn-primary,.btn-del{appearance:none;width:100%;display:block}
-.view{animation:fadein .22s ease}
-@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-
-/* 记录列表 */
-.month-h{
-  position:sticky;top:calc(62px + env(safe-area-inset-top));z-index:40;
-  display:flex;justify-content:space-between;align-items:baseline;
-  padding:6px 6px;font-size:13px;font-weight:700;color:var(--text2);
-  background:color-mix(in srgb,var(--bg) 82%,transparent);
-  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
-}
-.month-h .cnt{font-size:11px;font-weight:500}
-.rec{
-  display:flex;align-items:center;gap:12px;background:var(--card);
-  border-radius:16px;padding:12px 12px 12px 14px;margin-bottom:8px;box-shadow:var(--shadow);
-  transition:transform .12s ease;
-}
-.rec:active{transform:scale(.985)}
-.rec .day{
-  width:46px;height:46px;border-radius:14px;flex:none;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;color:#fff;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));font-weight:700;
-}
-.rec .day b{font-size:17px;line-height:1.05}
-.rec .day span{font-size:9.5px;opacity:.9;font-weight:500}
-.rec .mid{flex:1;min-width:0}
-.rec .t1{font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.rec .t1 .wd{color:var(--text2);font-weight:500;font-size:12.5px}
-.chip{font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:99px;background:var(--card2);color:var(--text2);border:1px solid var(--line)}
-.chip.prot{color:#1f9d55;background:rgba(52,199,89,.12);border-color:transparent}
-.chip.nprot{color:var(--red);background:rgba(255,69,58,.1);border-color:transparent}
-.rec .note{font-size:12px;color:var(--text2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.syncBtn{width:38px;height:38px;border-radius:12px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--card2);border:1px solid var(--line)}
-.syncBtn svg{width:19px;height:19px}
-.syncBtn.done{background:rgba(52,199,89,.13);border-color:transparent}
-.empty{
-  text-align:center;padding:64px 24px;color:var(--text2);
-}
-.empty .big{font-size:44px;margin-bottom:12px}
-.empty p{font-size:14px;line-height:1.7}
-
-/* 统计页 */
-.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-.stat{background:var(--card);border-radius:16px;padding:13px 10px;box-shadow:var(--shadow);text-align:center}
-.stat b{display:block;font-size:22px;font-weight:800;letter-spacing:-.3px}
-.stat b small{font-size:11px;font-weight:600;color:var(--text2);margin-left:1px}
-.stat span{display:block;font-size:10.5px;color:var(--text2);margin-top:3px;font-weight:500}
-.card{background:var(--card);border-radius:18px;padding:16px;box-shadow:var(--shadow);margin-bottom:14px}
-.card h3{font-size:13.5px;font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;align-items:baseline}
-.card h3 small{font-size:10.5px;color:var(--text2);font-weight:500}
-.hm-lab{font-size:9px;fill:var(--text2)}
-.hm.l0{fill:var(--hm0)} .hm.l1{fill:#ffc2d4} .hm.l2{fill:#ff8fae} .hm.l3{fill:#ff4f83}
-.hm.today{stroke:var(--accent2);stroke-width:1.6}
-.legend{display:flex;gap:4px;justify-content:flex-end;align-items:center;font-size:10px;color:var(--text2);margin-top:8px}
-.legend i{width:9px;height:9px;border-radius:2.5px;display:inline-block}
-#bars{display:flex;justify-content:space-between;align-items:flex-end;height:118px;padding:0 4px}
-.bar-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;flex:1;height:100%}
-.bar{width:60%;max-width:26px;border-radius:6px 6px 3px 3px;background:linear-gradient(180deg,var(--accent),var(--accent2));min-height:3px}
-.bar-num{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:3px}
-.bar-lab{font-size:10px;color:var(--text2);margin-top:5px}
-.satrow{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-.satrow .lab{font-size:11px;color:var(--text2);width:52px;flex:none;text-align:right}
-.satrow .track{flex:1;height:8px;border-radius:99px;background:var(--card2);overflow:hidden}
-.satrow .fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
-.satrow .num{font-size:11px;font-weight:700;color:var(--text2);width:20px}
-
-/* 设置页 */
-.group{background:var(--card);border-radius:18px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
-.group h3{font-size:13px;font-weight:700;color:var(--text2);padding:14px 16px 8px;text-transform:uppercase;letter-spacing:.5px}
-.cell{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 16px;font-size:15px;border-top:1px solid var(--line);width:100%;text-align:left}
-.cell.tappable:active{background:var(--card2)}
-.cell .l{flex:1}
-.cell .l small{display:block;font-size:11px;color:var(--text2);margin-top:2px}
-.cell svg.chev{width:15px;height:15px;color:var(--text2);flex:none}
-#scName{
-  flex:1;max-width:190px;text-align:right;background:var(--card2);border:1px solid var(--line);
-  border-radius:9px;padding:7px 10px;font-size:14px;font-weight:600;outline:none;
-}
-#scName:focus{border-color:var(--accent)}
-.hint{font-size:11.5px;line-height:1.65;color:var(--text2);padding:10px 16px 14px;border-top:1px solid var(--line)}
-.switch{position:relative;width:50px;height:30px;flex:none}
-.switch input{opacity:0;width:100%;height:100%;position:absolute;z-index:2;margin:0}
-.switch .kn{position:absolute;inset:0;border-radius:99px;background:var(--hm0);transition:background .2s}
-.switch .kn::after{
-  content:"";position:absolute;top:2px;left:2px;width:26px;height:26px;border-radius:50%;
-  background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.25);transition:transform .2s;
-}
-.switch input:checked+.kn{background:var(--green)}
-.switch input:checked+.kn::after{transform:translateX(20px)}
-.danger{color:var(--red)!important;font-weight:600}
-
-/* ── FAB ── */
-#fab{
-  position:fixed;right:20px;bottom:calc(24px + env(safe-area-inset-bottom));z-index:60;
-  width:58px;height:58px;border-radius:50%;color:#fff;font-size:30px;font-weight:300;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  box-shadow:0 6px 20px rgba(255,92,138,.45);display:flex;align-items:center;justify-content:center;
-  transition:transform .12s;
-}
-#fab:active{transform:scale(.9)}
-
-/* ── Tab bar ── */
-#tabbar{
-  position:fixed;left:0;right:0;bottom:0;z-index:55;display:flex;
-  padding:7px 10px calc(7px + env(safe-area-inset-bottom));
-  background:color-mix(in srgb,var(--card) 86%,transparent);
-  -webkit-backdrop-filter:saturate(180%) blur(18px);backdrop-filter:saturate(180%) blur(18px);
-  border-top:1px solid var(--line);
-}
-#tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2.5px;color:var(--text2);font-size:10px;font-weight:600;padding:3px 0}
-#tabbar button svg{width:23px;height:23px}
-#tabbar button.on{color:var(--accent)}
-
-/* ── Sheet(添加/编辑) ── */
-.overlay{
-  position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.42);
-  display:flex;align-items:flex-end;justify-content:center;
-  opacity:0;pointer-events:none;transition:opacity .22s;
-}
-.overlay.show{opacity:1;pointer-events:auto}
-.sheet{
-  width:100%;max-width:560px;background:var(--card);border-radius:22px 22px 0 0;
-  padding:10px 20px calc(26px + env(safe-area-inset-bottom));
-  transform:translateY(60px);transition:transform .26s cubic-bezier(.2,.9,.3,1);
-  max-height:calc(92dvh - 40px);overflow-y:auto;
-}
-.overlay.show .sheet{transform:none}
-.grip{width:38px;height:5px;border-radius:99px;background:var(--hm0);margin:0 auto 12px}
-.sheet h2{font-size:18px;font-weight:800;margin-bottom:14px}
-.frow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);font-size:15px;font-weight:600}
-.frow.col{flex-direction:column;align-items:stretch;gap:8px}
-.frow input[type=datetime-local],.frow input[type=number]{
-  background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:8px 10px;
-  font-size:15px;font-weight:600;outline:none;max-width:220px;text-align:right;
-}
-.frow textarea{
-  background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:10px 12px;
-  font-size:14.5px;outline:none;resize:none;width:100%;
-}
-.frow textarea:focus,.frow input:focus{border-color:var(--accent)}
-.seg{display:flex;background:var(--card2);border-radius:10px;padding:2.5px;border:1px solid var(--line)}
-.seg button{padding:6.5px 14px;border-radius:8px;font-size:13.5px;font-weight:600;color:var(--text2)}
-.seg button.on{background:var(--card);color:var(--text);box-shadow:0 1px 5px rgba(0,0,0,.14)}
-.seg button.on.p1{color:var(--green)} .seg button.on.p0{color:var(--red)}
-.stars{display:flex;gap:4px}
-.stars button{font-size:24px;color:var(--hm0);line-height:1;padding:2px}
-.stars button.on{color:var(--accent)}
-.btn-primary{
-  appearance:none;width:100%;display:block;padding:15px;border-radius:15px;margin-top:16px;font-size:16.5px;font-weight:700;color:#fff;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 5px 16px rgba(255,92,138,.35);
-}
-.btn-primary:active{opacity:.85}
-.btn-del{appearance:none;width:100%;display:block;padding:14px;border-radius:15px;margin-top:10px;font-size:15px;font-weight:600;color:var(--red);background:rgba(255,69,58,.09)}
-.btn-del.arm{background:var(--red);color:#fff}
-
-/* ── 指南 ── */
-.guide{position:fixed;inset:0;z-index:120;background:var(--bg);overflow-y:auto;display:none;
-  padding:calc(16px + env(safe-area-inset-top)) 18px calc(40px + env(safe-area-inset-bottom));}
-.guide.show{display:block}
-.guide-inner{max-width:560px;margin:0 auto}
-.gback{display:inline-flex;align-items:center;gap:5px;color:var(--accent);font-weight:700;font-size:15px;margin-bottom:10px}
-.gback svg{width:18px;height:18px}
-.guide h1{font-size:22px;font-weight:800;margin-bottom:6px}
-.guide .lead{font-size:13.5px;line-height:1.7;color:var(--text2);margin-bottom:16px}
-.gstep{background:var(--card);border-radius:16px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow)}
-.gstep .no{
-  width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));
-  color:#fff;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;flex:none;
-}
-.gstep h4{display:flex;align-items:center;font-size:14.5px;font-weight:700;margin-bottom:6px}
-.gstep p{font-size:13px;line-height:1.7;color:var(--text2)}
-.gstep p b{color:var(--text)}
-.gstep code{background:var(--card2);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12px;font-family:ui-monospace,Menlo,monospace}
-.actionlist{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:2;font-family:ui-monospace,Menlo,monospace;overflow-x:auto;margin-top:8px}
-.gnote{background:rgba(255,159,10,.1);border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.7;margin:12px 0;color:#b26a00}
-@media (prefers-color-scheme: dark){.gnote{color:#ffd60a}}
-
-/* toast */
-#toast{
-  position:fixed;left:50%;transform:translateX(-50%) translateY(-16px);top:calc(14px + env(safe-area-inset-top));
-  background:var(--text);color:var(--bg);font-size:13.5px;font-weight:600;
-  padding:10px 18px;border-radius:99px;z-index:200;opacity:0;pointer-events:none;
-  transition:all .25s;max-width:86vw;text-align:center;
-}
-#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-
-/* 隐私遮罩 */
-body.masked .blurrable{filter:blur(9px);transition:filter .2s;user-select:none}
-body.masked .blurrable:active{filter:none}
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>医刊速递 MedFeeds · 生物医学期刊 RSS 订阅</title>
+<meta name="description" content="订阅生物医学研究期刊，以 RSS 方式聚合接收最新发表的文章。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230d9488'/%3E%3Cpath d='M50 22v14M50 64v14M22 50h14M64 50h14' stroke='white' stroke-width='10' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='11' fill='white'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/style.css">
 </head>
 <body>
 
-<header id="topbar">
-  <div class="title">亲密记录<span class="sub">私密 · 仅存本机</span></div>
-  <button id="maskBtn" title="隐私遮罩">
-    <svg id="maskIconEye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-    <svg id="maskIconOff" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-  </button>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo" aria-hidden="true">
+      <svg viewBox="0 0 100 100" width="30" height="30"><rect width="100" height="100" rx="24" fill="var(--primary)"/><path d="M50 24v13M50 63v13M24 50h13M63 50h13" stroke="#fff" stroke-width="10" stroke-linecap="round"/><circle cx="50" cy="50" r="11" fill="#fff"/></svg>
+    </span>
+    <div class="brand-text">
+      <h1>医刊速递</h1>
+      <span>MedFeeds · 生物医学期刊 RSS 聚合</span>
+    </div>
+  </div>
+
+  <nav class="tabs" id="tabs">
+    <button data-view="feed" class="active">最新文章</button>
+    <button data-view="market">发现期刊</button>
+    <button data-view="subs">我的订阅<span id="subsBadge" class="badge-count hidden">0</span></button>
+  </nav>
+
+  <div class="topbar-right">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" width="15" height="15"><path fill="none" stroke="currentColor" stroke-width="2" d="M21 21l-4.3-4.3M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z"/></svg>
+      <input id="searchInput" type="search" placeholder="搜索标题 / 摘要 / 期刊…">
+    </div>
+    <button id="refreshBtn" class="btn primary" title="拉取所有订阅源的最新文章">
+      <svg viewBox="0 0 24 24" width="15" height="15" class="spin-target"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M20 12a8 8 0 10-2.3 5.7M20 12v6M20 12h-6"/></svg>
+      <span>刷新</span>
+    </button>
+  </div>
 </header>
 
 <main>
-  <!-- 记录 -->
-  <section id="view0" class="view">
-    <div id="recList"></div>
+  <!-- ===== 最新文章 ===== -->
+  <section id="view-feed" class="view active">
+    <aside class="sidebar" id="sidebar">
+      <div class="side-group">
+        <button class="side-item" data-filter="all"><span class="ic">☰</span>全部文章<b id="cnt-all">0</b></button>
+        <button class="side-item" data-filter="unread"><span class="ic">●</span>未读<b id="cnt-unread">0</b></button>
+        <button class="side-item" data-filter="starred"><span class="ic">★</span>收藏<b id="cnt-starred">0</b></button>
+      </div>
+      <div class="side-divider">按期刊筛选</div>
+      <div class="side-group" id="journalFilterList"></div>
+      <div class="side-divider">状态</div>
+      <div class="side-status" id="sideStatus"></div>
+    </aside>
+
+    <div class="content">
+      <div class="toolbar">
+        <label class="chk"><input type="checkbox" id="onlyUnread"> 只看未读</label>
+        <span class="muted" id="lastRefresh"></span>
+        <span class="spacer"></span>
+        <button id="markAllReadBtn" class="btn ghost sm">全部已读</button>
+      </div>
+      <div id="articleList" class="articles"></div>
+    </div>
   </section>
 
-  <!-- 统计 -->
-  <section id="view1" class="view" hidden>
-    <div class="cards blurrable" id="statCards"></div>
-    <div class="card">
-      <h3>活跃热力图 <small>近 26 周</small></h3>
-      <div class="blurrable" id="heat"></div>
-      <div class="legend">少 <i style="background:var(--hm0)"></i><i class="hm l1" style="background:#ffc2d4"></i><i style="background:#ff8fae"></i><i style="background:#ff4f83"></i> 多</div>
-    </div>
-    <div class="card">
-      <h3>月度次数 <small>近 6 个月</small></h3>
-      <div class="blurrable" id="bars"></div>
-    </div>
-    <div class="card">
-      <h3>满意度分布</h3>
-      <div class="blurrable" id="satBars"></div>
+  <!-- ===== 发现期刊 ===== -->
+  <section id="view-market" class="view">
+    <div class="market">
+      <div class="section-head">
+        <h2>发现期刊</h2>
+        <span class="muted" id="marketCount"></span>
+      </div>
+      <div class="chips" id="categoryChips"></div>
+      <div id="journalGrid" class="cards"></div>
+
+      <div class="custom-add">
+        <h3>添加自定义订阅</h3>
+        <div class="add-row">
+          <input id="rssUrlInput" type="url" placeholder="粘贴任意 RSS / Atom 链接，如 https://www.nature.com/nature.rss">
+          <button class="btn primary" id="addRssBtn">添加 RSS 源</button>
+        </div>
+        <div class="add-row">
+          <input id="pubmedInput" type="text" placeholder="按 PubMed 期刊名添加（NLM 标准缩写最佳），如 Circulation、Nat Commun、J Hepatol">
+          <button class="btn primary" id="addPubmedBtn">按 PubMed 添加</button>
+        </div>
+        <p class="hint">💡 PubMed 收录 3 万余种生物医学期刊——上表没有的期刊，都可以用期刊名订阅；任何站点只要有 RSS 输出也都能添加。</p>
+      </div>
     </div>
   </section>
 
-  <!-- 设置 -->
-  <section id="view2" class="view" hidden>
-    <div class="group">
-      <h3>Apple 健康</h3>
-      <div class="cell">
-        <div class="l">快捷指令名称<small>需与 iPhone 上创建的指令名一致</small></div>
-        <input id="scName" placeholder="IntimacyLog" autocomplete="off">
+  <!-- ===== 我的订阅 ===== -->
+  <section id="view-subs" class="view">
+    <div class="subs">
+      <div class="section-head">
+        <h2>我的订阅</h2>
+        <span class="muted" id="subsCount"></span>
       </div>
-      <button class="cell tappable" onclick="openGuide()">
-        <div class="l">接入指南（1 分钟配置）</div>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-      </button>
-      <button class="cell tappable" onclick="sendTest()">
-        <div class="l">发送测试数据<small>验证快捷指令能否写入健康</small></div>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-      </button>
-      <button class="cell tappable" onclick="resetSync()">
-        <div class="l">重置全部同步标记</div>
-      </button>
-      <p class="hint">iOS 出于隐私保护不允许网页直接写入健康 App。本页通过官方「快捷指令」桥接：点列表右侧的 ♥ 按钮即可把该条记录写入健康。时长、满意度、备注仅保存在本页，健康 App 只记录时间与是否采取保护措施。</p>
-    </div>
+      <div id="subsList" class="cards"></div>
 
-    <div class="group">
-      <h3>隐私</h3>
-      <div class="cell">
-        <div class="l">隐私遮罩<small>模糊显示记录与统计数字</small></div>
-        <label class="switch"><input type="checkbox" id="privacySw"><span class="kn"></span></label>
+      <div class="settings">
+        <h3>偏好设置</h3>
+        <div class="setting-row">
+          <div>
+            <b>自动刷新</b>
+            <p class="hint">定时自动拉取最新文章</p>
+          </div>
+          <select id="autoRefreshSel">
+            <option value="0">关闭</option>
+            <option value="15">每 15 分钟</option>
+            <option value="30">每 30 分钟</option>
+            <option value="60">每 1 小时</option>
+            <option value="180">每 3 小时</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <div>
+            <b>每刊拉取条数</b>
+            <p class="hint">每次刷新每个期刊保留的最新文章数</p>
+          </div>
+          <select id="limitSel">
+            <option value="10">10 条</option>
+            <option value="15">15 条</option>
+            <option value="20">20 条</option>
+            <option value="30">30 条</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <div>
+            <b>新文章桌面通知</b>
+            <p class="hint">有新文章到达时弹出系统通知</p>
+          </div>
+          <label class="switch"><input type="checkbox" id="notifyChk"><span class="slider"></span></label>
+        </div>
+
+        <h3>数据管理</h3>
+        <div class="setting-row">
+          <div>
+            <b>OPML 导出</b>
+            <p class="hint">导出为标准 OPML，可导入 Feedly / Inoreader 等任何 RSS 阅读器</p>
+          </div>
+          <button class="btn ghost" id="exportOpmlBtn">导出 .opml</button>
+        </div>
+        <div class="setting-row">
+          <div>
+            <b>OPML 导入</b>
+            <p class="hint">从其他阅读器的 OPML 备份恢复订阅</p>
+          </div>
+          <label class="btn ghost file-label">选择文件<input type="file" id="opmlFile" accept=".opml,.xml" hidden></label>
+        </div>
+        <div class="setting-row danger-row">
+          <div>
+            <b>清空本地数据</b>
+            <p class="hint">删除全部订阅、已读与收藏记录（不可恢复）</p>
+          </div>
+          <button class="btn danger" id="wipeBtn">清空</button>
+        </div>
       </div>
-      <p class="hint">所有数据仅以浏览器本地存储（localStorage）形式保存在你的设备上，<b>不上传任何服务器</b>。请勿在共用设备上使用；清除 Safari 网站数据会删除记录，请先导出备份。</p>
-    </div>
-
-    <div class="group">
-      <h3>数据</h3>
-      <button class="cell tappable" onclick="exportData()">
-        <div class="l">导出备份（JSON）</div>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-      </button>
-      <label class="cell tappable" for="importFile" style="cursor:pointer">
-        <div class="l">导入备份</div>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-      </label>
-      <input type="file" id="importFile" accept=".json,application/json" hidden>
-      <button class="cell tappable danger" id="clearBtn" onclick="clearAll()">
-        <div class="l">清空全部数据</div>
-      </button>
-    </div>
-
-    <div class="group">
-      <h3>使用提示</h3>
-      <p class="hint" style="border-top:none">
-        · 在 iPhone Safari 中点「分享 → 添加到主屏幕」，即可全屏当 App 使用，图标为中性心形。<br>
-        · 换手机 / 换浏览器时，用「导出备份」迁移数据。<br>
-        · 快捷指令写入的记录可在 健康 App → 浏览 → 性生活 中查看（建议添加到收藏）。
-      </p>
     </div>
   </section>
 </main>
 
-<button id="fab" onclick="openSheet(null)">+</button>
-
-<nav id="tabbar">
-  <button class="on" onclick="switchTab(0)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="3.5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="3.5" cy="18" r="1.4" fill="currentColor" stroke="none"/></svg>
-    记录
-  </button>
-  <button onclick="switchTab(1)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="20" x2="5" y2="13"/><line x1="12" y1="20" x2="12" y2="5"/><line x1="19" y1="20" x2="19" y2="10"/></svg>
-    统计
-  </button>
-  <button onclick="switchTab(2)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-    设置
-  </button>
-</nav>
-
-<!-- 添加/编辑 Sheet -->
-<div class="overlay" id="sheetWrap">
-  <div class="sheet">
-    <div class="grip"></div>
-    <h2 id="sheetTitle">添加记录</h2>
-    <div class="frow"><span>时间</span><input type="datetime-local" id="f-ts"></div>
-    <div class="frow"><span>保护措施</span>
-      <div class="seg" id="f-prot">
-        <button data-v="1">已使用</button>
-        <button data-v="0">未使用</button>
-      </div>
+<!-- 期刊预览弹窗 -->
+<div id="modal" class="modal hidden">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="modalTitle">预览</h3>
+      <button class="modal-close" id="modalCloseBtn" aria-label="关闭">×</button>
     </div>
-    <div class="frow"><span>时长（分钟）</span><input type="number" id="f-dur" min="0" max="600" step="5" placeholder="选填" inputmode="numeric"></div>
-    <div class="frow"><span>满意度</span><div class="stars" id="f-sat"></div></div>
-    <div class="frow col"><span>备注</span><textarea id="f-note" rows="2" maxlength="200" placeholder="选填"></textarea></div>
-    <button class="btn-primary" id="saveRecBtn" onclick="saveRec()">保存</button>
-    <button class="btn-del" id="delBtn" onclick="delRec()">删除这条记录</button>
+    <div class="modal-body" id="modalBody"></div>
   </div>
 </div>
 
-<!-- 快捷指令指南 -->
-<div class="guide" id="guideWrap">
-  <div class="guide-inner">
-    <button class="gback" onclick="closeGuide()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-      返回设置
-    </button>
-    <h1>连接 Apple 健康</h1>
-    <p class="lead">iPhone 不允许网页直接写入健康 App（隐私保护）。只需在 iPhone 上花约 1 分钟创建一个「快捷指令」，之后在记录列表点 ♥ 即可一键写入健康。</p>
+<div id="toast" class="toast hidden"></div>
 
-    <div class="gstep"><h4><span class="no">1</span>新建快捷指令</h4>
-      <p>打开 iPhone 自带的 <b>「快捷指令」App</b> → 右上角 <b>「+」</b> 新建 → 点顶部名称，重命名为 <code>IntimacyLog</code>（也可自定义，但必须与本页「设置 → 快捷指令名称」完全一致）。</p>
-    </div>
-
-    <div class="gstep"><h4><span class="no">2</span>添加第 1 个动作</h4>
-      <p>点「添加操作」，搜索 <b>词典</b>，选择 <b>「从输入中获取词典」</b>（Get Dictionary from Input）。它会自动接收网页传来的数据。</p>
-    </div>
-
-    <div class="gstep"><h4><span class="no">3</span>添加第 2、3 个动作</h4>
-      <p>再搜索 <b>词典值</b>，添加两次 <b>「获取词典值」</b>：</p>
-      <p>· 第一个：获取 key 输入 <code>date</code>，点变量名改名为 <code>Date</code></p>
-      <p>· 第二个：获取 key 输入 <code>protection</code>，变量名改名为 <code>Protection</code></p>
-    </div>
-
-    <div class="gstep"><h4><span class="no">4</span>添加判断分支</h4>
-      <p>搜索 <b>如果</b>，添加 <b>「如果」</b> 动作，条件设为 <b>Protection 为 true</b>（即"是"）。</p>
-    </div>
-
-    <div class="gstep"><h4><span class="no">5</span>记录样本（两个分支各一个）</h4>
-      <p>搜索 <b>记录样本</b>，添加 <b>「记录样本」</b> 动作到"如果"分支内：</p>
-      <p>· 类型选 <b>性生活</b>，值选 <b>使用了保护措施</b>，<b>日期</b> 参数选择变量 <code>Date</code></p>
-      <p>· 在「否则」分支再添加一个「记录样本」：类型 <b>性生活</b>，值 <b>未使用保护措施</b>，日期同样选 <code>Date</code></p>
-      <div class="actionlist">① 从输入中获取词典
-② 获取词典值  key: date        → Date
-③ 获取词典值  key: protection  → Protection
-④ 如果 (Protection 为 true)
-⑤ └ 记录样本 · 性生活 · 使用了保护措施 · 日期: Date
-⑥ 否则
-⑦ └ 记录样本 · 性生活 · 未使用保护措施 · 日期: Date</div>
-    </div>
-
-    <div class="gstep"><h4><span class="no">6</span>测试</h4>
-      <p>回到本页「设置」→ 点 <b>「发送测试数据」</b>，允许打开快捷指令。然后打开 <b>健康 App → 浏览 → 搜索"性生活"</b>，应出现一条 <b>2000年1月1日</b> 的记录（专门用旧日期方便辨认，左滑删除即可）。之后每次在列表点 ♥，就会把那条记录的时间与保护情况写入健康。</p>
-    </div>
-
-    <div class="gnote">提示：首次运行快捷指令时 iOS 会请求「允许访问健康数据」，请选择允许。健康 App 中只写入「时间 + 是否使用保护措施」两项（这是健康库"性生活"类型仅有的字段）；时长、满意度、备注仅保存在本网页。</div>
-
-    <button class="btn-primary" id="guideTestBtn" onclick="sendTest()">我已完成，发送测试数据</button>
-  </div>
-</div>
-
-<div id="toast"></div>
-
-<script>
-/* ───────── 基础 ───────── */
-const $=s=>document.querySelector(s);
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const uid=()=> (crypto.randomUUID?crypto.randomUUID():'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,8));
-const p2=n=>String(n).padStart(2,'0');
-
-const LS_KEY='intimacy.v1', LS_SET='intimacy.settings.v1';
-let records=(()=>{try{const a=JSON.parse(localStorage.getItem(LS_KEY));return Array.isArray(a)?a:[]}catch(e){return[]}})();
-let settings=Object.assign({shortcutName:'IntimacyLog',privacy:false},(()=>{try{return JSON.parse(localStorage.getItem(LS_SET))||{}}catch(e){return{}}})());
-const saveData=()=>localStorage.setItem(LS_KEY,JSON.stringify(records));
-const saveSettings=()=>localStorage.setItem(LS_SET,JSON.stringify(settings));
-
-let toastTimer=null;
-function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400)}
-
-/* ───────── 时间工具 ───────── */
-function toLocalInput(d){return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}T${p2(d.getHours())}:${p2(d.getMinutes())}`}
-function tzStr(d){const off=-d.getTimezoneOffset();const s=off>=0?'+':'-';const a=Math.abs(off);return `${s}${p2(Math.floor(a/60))}:${p2(a%60)}`}
-function isoLocal(d){return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}T${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}${tzStr(d)}`}
-function dateKey(d){return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`}
-const WD=['日','一','二','三','四','五','六'];
-
-/* ───────── Tab ───────── */
-function switchTab(i){
-  document.querySelectorAll('#tabbar button').forEach((b,j)=>b.classList.toggle('on',i===j));
-  for(let k=0;k<3;k++)$('#view'+k).hidden=(k!==i);
-  $('#view'+i).classList.remove('view');void $('#view'+i).offsetWidth;$('#view'+i).classList.add('view');
-  $('#fab').style.display=i===0?'flex':'none';
-  window.scrollTo(0,0);
-}
-
-/* ───────── 编辑 Sheet ───────── */
-let editingId=null, formProt=1, formSat=0, delArmed=false;
-
-function initStars(){
-  const box=$('#f-sat');
-  box.innerHTML='';
-  for(let i=1;i<=5;i++){
-    const b=document.createElement('button');b.textContent='★';b.dataset.v=i;
-    b.onclick=()=>{formSat=(formSat===i)?0:i;paintStars()};
-    box.appendChild(b);
-  }
-}
-function paintStars(){document.querySelectorAll('#f-sat button').forEach(b=>b.classList.toggle('on',+b.dataset.v<=formSat))}
-function paintProt(){
-  document.querySelectorAll('#f-prot button').forEach(b=>{
-    const on=+b.dataset.v===formProt;b.classList.toggle('on',on);
-    b.classList.toggle('p1',on&&formProt===1);b.classList.toggle('p0',on&&formProt===0);
-  });
-}
-document.querySelectorAll('#f-prot button').forEach(b=>b.onclick=()=>{formProt=+b.dataset.v;paintProt()});
-
-function openSheet(id){
-  editingId=id||null;delArmed=false;
-  const delBtn=$('#delBtn');
-  delBtn.style.display=id?'block':'none';
-  delBtn.classList.remove('arm');delBtn.textContent='删除这条记录';
-  const r=id?records.find(x=>x.id===id):null;
-  $('#sheetTitle').textContent=r?'编辑记录':'添加记录';
-  $('#f-ts').value=r?r.ts:toLocalInput(new Date());
-  formProt=r?(r.prot?1:0):1;paintProt();
-  $('#f-dur').value=(r&&r.dur>0)?r.dur:'';
-  formSat=r?(r.sat||0):0;paintStars();
-  $('#f-note').value=r?(r.note||''):'';
-  $('#sheetWrap').classList.add('show');
-}
-function closeSheet(){$('#sheetWrap').classList.remove('show')}
-$('#sheetWrap').addEventListener('click',e=>{if(e.target.id==='sheetWrap')closeSheet()});
-
-function saveRec(){
-  const ts=$('#f-ts').value;
-  if(!ts){toast('请选择时间');return}
-  const dur=parseInt($('#f-dur').value,10);
-  const note=$('#f-note').value.trim().slice(0,200);
-  if(editingId){
-    const r=records.find(x=>x.id===editingId);
-    if(!r){closeSheet();return}
-    const changed=(r.ts!==ts)||(!!r.prot!==!!formProt);
-    Object.assign(r,{ts,dur:dur>0?dur:null,prot:formProt===1,sat:formSat,note,synced:changed?false:r.synced});
-  }else{
-    records.push({id:uid(),ts,dur:dur>0?dur:null,prot:formProt===1,sat:formSat,note,synced:false});
-  }
-  saveData();closeSheet();renderAll();toast('已保存');
-}
-function delRec(){
-  const b=$('#delBtn');
-  if(!delArmed){delArmed=true;b.classList.add('arm');b.textContent='再点一次确认删除';return}
-  records=records.filter(x=>x.id!==editingId);
-  saveData();closeSheet();renderAll();toast('已删除');
-}
-
-/* ───────── 记录列表 ───────── */
-function renderList(){
-  const list=$('#recList');
-  if(!records.length){
-    list.innerHTML=`<div class="empty"><div class="big">💗</div>
-      <p><b>还没有记录</b><br>点右下角 + 添加第一条<br>
-      <span style="font-size:11.5px">数据只保存在这台设备的浏览器里，不会上传</span></p></div>`;
-    return;
-  }
-  const sorted=[...records].sort((a,b)=>b.ts.localeCompare(a.ts));
-  let html='',lastKey='';
-  let monthCnt=0;
-  const groups=[];
-  sorted.forEach(r=>{
-    const d=new Date(r.ts);if(isNaN(d))return;
-    const k=`${d.getFullYear()}-${d.getMonth()}`;
-    if(k!==lastKey){if(lastKey)groups[groups.length-1].cnt=monthCnt;groups.push({key:k,d,items:[]});lastKey=k;monthCnt=0}
-    groups[groups.length-1].items.push(r);monthCnt++;
-  });
-  groups[groups.length-1].cnt=monthCnt;
-  groups.forEach(g=>{
-    html+=`<div class="month-h"><span>${g.d.getFullYear()}年${g.d.getMonth()+1}月</span><span class="cnt">${g.cnt} 次</span></div>`;
-    g.items.forEach(r=>{
-      const d=new Date(r.ts);
-      const chips=[];
-      if(r.prot)chips.push('<span class="chip prot">已保护</span>');
-      else chips.push('<span class="chip nprot">未保护</span>');
-      if(r.dur>0)chips.push(`<span class="chip">⏱ ${r.dur} 分</span>`);
-      if(r.sat>0)chips.push(`<span class="chip">★${r.sat}</span>`);
-      const heart=r.synced
-        ?'<svg viewBox="0 0 24 24" fill="#30c260"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/><path d="M17.5 8.5l-6 6-2.5-2.5" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-        :'<svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.9"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
-      html+=`<div class="rec blurrable" onclick="openSheet('${r.id}')">
-        <div class="day"><b>${p2(d.getDate())}</b><span>${d.getMonth()+1}月</span></div>
-        <div class="mid">
-          <div class="t1">周${WD[d.getDay()]} ${p2(d.getHours())}:${p2(d.getMinutes())} ${chips.join('')}</div>
-          ${r.note?`<div class="note">${esc(r.note)}</div>`:''}
-        </div>
-        <button class="syncBtn${r.synced?' done':''}" title="${r.synced?'已写入健康 · 再点一次可重新写入':'写入 Apple 健康'}" onclick="event.stopPropagation();syncRec('${r.id}')">${heart}</button>
-      </div>`;
-    });
-  });
-  list.innerHTML=html;
-}
-
-/* ───────── 统计 ───────── */
-function computeStats(){
-  const now=new Date();
-  let m=0,y=0,t=0,last30=0,satSum=0,satN=0,durSum=0,durN=0;
-  const cut=now.getTime()-30*864e5;
-  records.forEach(r=>{
-    const d=new Date(r.ts);if(isNaN(d))return;t++;
-    if(d.getFullYear()===now.getFullYear()){y++;if(d.getMonth()===now.getMonth())m++}
-    if(d.getTime()>=cut&&d.getTime()<=now.getTime()+36e5)last30++;
-    if(r.sat>0){satSum+=r.sat;satN++}
-    if(r.dur>0){durSum+=r.dur;durN++}
-  });
-  const ts=records.map(r=>new Date(r.ts).getTime()).filter(x=>!isNaN(x)).sort((a,b)=>b-a);
-  let gapSum=0,gapN=0;for(let i=1;i<ts.length;i++){gapSum+=(ts[i-1]-ts[i])/864e5;gapN++}
-  return{m,y,t,last30,avgSat:satN?Math.round(satSum/satN*10)/10:0,avgDur:durN?Math.round(durSum/durN):0,avgGap:gapN?Math.round(gapSum/gapN*10)/10:0};
-}
-function renderStats(){
-  const s=computeStats();
-  const items=[
-    [s.m,'次','本月'],[s.last30,'次','近 30 天'],[s.y,'次','今年'],
-    [s.avgSat||'—',s.avgSat?'分':'','平均满意度'],[s.avgDur||'—',s.avgDur?'分':'','平均时长'],[s.avgGap||'—',s.avgGap?'天':'','平均间隔'],
-  ];
-  $('#statCards').innerHTML=items.map(([v,u,l])=>`<div class="stat"><b>${v}<small>${u}</small></b><span>${l}</span></div>`).join('');
-
-  /* 热力图 */
-  const counts={};records.forEach(r=>{const d=new Date(r.ts);if(!isNaN(d)){const k=dateKey(d);counts[k]=(counts[k]||0)+1}});
-  const cell=11,gap=3,L=22,weeks=26;
-  const now=new Date();now.setHours(0,0,0,0);
-  const dow=(now.getDay()+6)%7;
-  const thisMon=new Date(now);thisMon.setDate(now.getDate()-dow);
-  const W=weeks*(cell+gap)+L+2,H=7*(cell+gap)+24;
-  let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet">`;
-  const wl=['一','','三','','五','',''];
-  for(let r=0;r<7;r++)if(wl[r])svg+=`<text x="0" y="${24+r*(cell+gap)+9}" class="hm-lab">${wl[r]}</text>`;
-  const monNames=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-  let prevMon=-1;
-  for(let i=weeks-1;i>=0;i--){
-    const start=new Date(thisMon);start.setDate(thisMon.getDate()-i*7);
-    const x=L+(weeks-1-i)*(cell+gap);
-    if(start.getMonth()!==prevMon){prevMon=start.getMonth();svg+=`<text x="${x}" y="11" class="hm-lab">${monNames[prevMon]}</text>`}
-    for(let j=0;j<7;j++){
-      const d=new Date(start);d.setDate(start.getDate()+j);
-      if(d>now)continue;
-      const c=counts[dateKey(d)]||0;
-      const lvl=c===0?0:c===1?1:c===2?2:3;
-      const today=dateKey(d)===dateKey(now);
-      svg+=`<rect x="${x}" y="${24+j*(cell+gap)}" width="${cell}" height="${cell}" rx="2.6" class="hm l${lvl}${today?' today':''}"/>`;
-    }
-  }
-  svg+='</svg>';
-  $('#heat').innerHTML=svg;
-
-  /* 近6月柱状 */
-  const arr=[];
-  for(let i=5;i>=0;i--){
-    const d=new Date(now.getFullYear(),now.getMonth()-i,1);let c=0;
-    records.forEach(r=>{const rd=new Date(r.ts);if(rd.getFullYear()===d.getFullYear()&&rd.getMonth()===d.getMonth())c++});
-    arr.push({label:`${d.getMonth()+1}月`,c});
-  }
-  const max=Math.max(1,...arr.map(a=>a.c));
-  $('#bars').innerHTML=arr.map(a=>`<div class="bar-col"><span class="bar-num">${a.c||''}</span><div class="bar" style="height:${Math.max(3,Math.round(a.c/max*84))}px"></div><span class="bar-lab">${a.label}</span></div>`).join('');
-
-  /* 满意度分布 */
-  const satArr=[0,0,0,0,0,0];
-  records.forEach(r=>{if(r.sat>=1&&r.sat<=5)satArr[r.sat]++});
-  const satMax=Math.max(1,...satArr);
-  $('#satBars').innerHTML=[1,2,3,4,5].map(i=>`<div class="satrow"><span class="lab">${'★'.repeat(i)}</span><div class="track"><div class="fill" style="width:${Math.round(satArr[i]/satMax*100)}%"></div></div><span class="num">${satArr[i]||''}</span></div>`).join('');
-}
-
-/* ───────── Apple 健康同步 ───────── */
-function buildURL(payload){
-  const name=(settings.shortcutName||'IntimacyLog').trim()||'IntimacyLog';
-  return `shortcuts://run-shortcut?name=${encodeURIComponent(name)}&input=${encodeURIComponent(payload)}`;
-}
-function jumpShortcut(payload){
-  const url=buildURL(payload);
-  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
-  if(!isIOS){toast('请在 iPhone 的 Safari 中打开本页使用');return false}
-  location.href=url;return true;
-}
-function syncRec(id){
-  const r=records.find(x=>x.id===id);if(!r)return;
-  const payload=JSON.stringify({date:isoLocal(new Date(r.ts)),protection:!!r.prot});
-  if(jumpShortcut(payload)){
-    r.synced=true;saveData();renderList();
-    toast('已发送到快捷指令，请在弹窗中允许运行');
-  }
-}
-function sendTest(){
-  const payload=JSON.stringify({date:`2000-01-01T00:00:00${tzStr(new Date())}`,protection:false});
-  if(jumpShortcut(payload))toast('已发送测试数据（2000-01-01），去健康 App 核对');
-}
-function resetSync(){
-  records.forEach(r=>r.synced=false);saveData();renderAll();toast('已全部重置为未同步');
-}
-
-/* ───────── 指南 ───────── */
-function openGuide(){$('#guideWrap').classList.add('show');window.scrollTo(0,0)}
-function closeGuide(){$('#guideWrap').classList.remove('show')}
-
-/* ───────── 数据管理 ───────── */
-function exportData(){
-  if(!records.length){toast('暂无数据可导出');return}
-  const d=new Date();
-  const blob=new Blob([JSON.stringify(records,null,2)],{type:'application/json'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=`intimacy-backup-${d.getFullYear()}${p2(d.getMonth()+1)}${p2(d.getDate())}.json`;
-  a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
-  toast(`已导出 ${records.length} 条记录`);
-}
-$('#importFile').addEventListener('change',e=>{
-  const f=e.target.files[0];if(!f)return;
-  f.text().then(t=>{
-    try{
-      const arr=JSON.parse(t);
-      if(!Array.isArray(arr))throw 0;
-      let add=0,skip=0;
-      arr.forEach(x=>{
-        if(x&&x.ts&&!isNaN(new Date(x.ts))&&!records.some(r=>r.id===x.id)){
-          records.push({id:x.id||uid(),ts:x.ts,dur:+x.dur>0?+x.dur:null,prot:!!x.prot,sat:Math.min(5,Math.max(0,+x.sat||0)),note:String(x.note||'').slice(0,200),synced:!!x.synced});
-          add++;
-        }else skip++;
-      });
-      saveData();renderAll();
-      toast(`导入 ${add} 条${skip?`，跳过 ${skip} 条`:''}`);
-    }catch(err){toast('文件格式不正确')}
-    e.target.value='';
-  });
-});
-let clearArmed=false,clearTimer=null;
-function clearAll(){
-  const b=$('#clearBtn');
-  if(!clearArmed){
-    clearArmed=true;b.innerHTML='<div class="l">⚠️ 再点一次确认清空（不可恢复）</div>';
-    clearTimer=setTimeout(()=>{clearArmed=false;b.innerHTML='<div class="l">清空全部数据</div>'},3200);
-    return;
-  }
-  clearTimeout(clearTimer);clearArmed=false;
-  records=[];saveData();renderAll();
-  b.innerHTML='<div class="l">清空全部数据</div>';
-  toast('已清空');
-}
-
-/* ───────── 隐私 ───────── */
-function applyPrivacy(){
-  document.body.classList.toggle('masked',!!settings.privacy);
-  $('#privacySw').checked=!!settings.privacy;
-  $('#maskBtn').classList.toggle('on',!!settings.privacy);
-  $('#maskIconEye').style.display=settings.privacy?'none':'block';
-  $('#maskIconOff').style.display=settings.privacy?'block':'none';
-}
-$('#privacySw').addEventListener('change',e=>{settings.privacy=e.target.checked;saveSettings();applyPrivacy()});
-$('#maskBtn').addEventListener('click',()=>{settings.privacy=!settings.privacy;saveSettings();applyPrivacy()});
-
-/* ───────── 设置项 ───────── */
-$('#scName').value=settings.shortcutName||'IntimacyLog';
-$('#scName').addEventListener('change',e=>{
-  const v=e.target.value.trim();
-  settings.shortcutName=v||'IntimacyLog';
-  if(!v)e.target.value='IntimacyLog';
-  saveSettings();toast('已保存快捷指令名称');
-});
-
-/* ───────── PWA manifest（Android/桌面安装支持） ───────── */
-(function(){
-  try{
-    const man={name:'亲密记录',short_name:'亲密记录',start_url:'.',display:'standalone',background_color:'#f2f2f7',theme_color:'#ff5c8a',icons:[{src:'icon.png',sizes:'180x180',type:'image/png'}]};
-    const l=document.createElement('link');l.rel='manifest';
-    l.href=URL.createObjectURL(new Blob([JSON.stringify(man)],{type:'application/json'}));
-    document.head.appendChild(l);
-  }catch(e){}
-})();
-
-/* ───────── 启动 ───────── */
-function renderAll(){renderList();renderStats()}
-initStars();paintProt();
-applyPrivacy();renderAll();
-if(!localStorage.getItem('intimacy.seen')){
-  localStorage.setItem('intimacy.seen','1');
-  toast('欢迎使用！数据仅保存在本机，请到「设置」连接 Apple 健康');
-}
-</script>
+<script src="/app.js"></script>
 </body>
 </html>
