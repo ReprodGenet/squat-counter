@@ -2,178 +2,721 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>医刊速递 MedFeeds · 生物医学期刊 RSS 订阅</title>
-<meta name="description" content="订阅生物医学研究期刊，以 RSS 方式聚合接收最新发表的文章。">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230d9488'/%3E%3Cpath d='M50 22v14M50 64v14M22 50h14M64 50h14' stroke='white' stroke-width='10' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='50' r='11' fill='white'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="/style.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b0d12">
+<title>深蹲计数器</title>
+<style>
+  :root{
+    --bg:#0b0d12;
+    --card:#161a23;
+    --card2:#1e2430;
+    --line:#2b323f;
+    --text:#eef1f6;
+    --dim:#8b93a3;
+    --accent:#31d17c;
+    --accent2:#2a9df4;
+    --warn:#f0a33a;
+    --danger:#ef5350;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro SC","PingFang SC","Helvetica Neue",Arial,sans-serif;
+    min-height:100vh;
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:520px;margin:0 auto;padding:16px 16px 40px}
+
+  header{text-align:center;padding:12px 0 18px}
+  header h1{margin:0;font-size:20px;font-weight:600;letter-spacing:.5px}
+  header p{margin:6px 0 0;font-size:12px;color:var(--dim)}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+  .card h2{margin:0 0 12px;font-size:13px;font-weight:600;color:var(--dim);letter-spacing:.6px;text-transform:uppercase}
+
+  /* 计数显示 */
+  .counter{text-align:center;padding:8px 0 4px}
+  .count-num{
+    font-size:96px;font-weight:700;line-height:1;
+    font-variant-numeric:tabular-nums;
+    letter-spacing:-3px;
+    transition:color .18s ease, transform .12s ease;
+  }
+  .count-num.hit{color:var(--accent);transform:scale(1.06)}
+  .count-label{font-size:13px;color:var(--dim);margin-top:6px}
+  .meta-row{display:flex;justify-content:center;gap:22px;margin-top:12px;font-size:12px;color:var(--dim)}
+  .meta-row b{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums}
+
+  /* 按钮 */
+  .btn{
+    display:block;width:100%;padding:16px;border:none;border-radius:13px;
+    font-size:16px;font-weight:600;font-family:inherit;color:#fff;
+    background:var(--accent);cursor:pointer;transition:opacity .15s,transform .1s;
+  }
+  .btn:active{transform:scale(.98);opacity:.85}
+  .btn:disabled{background:#333a47;color:#666e7d;cursor:not-allowed}
+  .btn.stop{background:var(--danger)}
+  .btn.ghost{background:var(--card2);color:var(--text);border:1px solid var(--line)}
+  .btn-row{display:flex;gap:10px;margin-top:10px}
+  .btn-row .btn{margin:0}
+
+  /* 状态条 */
+  .status{
+    display:flex;align-items:center;gap:8px;justify-content:center;
+    font-size:12px;color:var(--dim);margin-top:10px;min-height:18px;
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:#4a5262;flex:0 0 auto}
+  .dot.on{background:var(--accent);box-shadow:0 0 8px var(--accent);animation:pulse 1.6s infinite}
+  .dot.err{background:var(--danger)}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  /* 波形 */
+  #wave{width:100%;height:88px;display:block;border-radius:10px;background:#0e1119}
+
+  /* 参数 */
+  .param{margin-bottom:14px}
+  .param:last-child{margin-bottom:0}
+  .param-head{display:flex;justify-content:space-between;font-size:13px;margin-bottom:7px}
+  .param-head span:last-child{color:var(--accent);font-variant-numeric:tabular-nums;font-weight:600}
+  input[type=range]{
+    -webkit-appearance:none;width:100%;height:3px;border-radius:2px;
+    background:var(--line);outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:22px;height:22px;border-radius:50%;
+    background:var(--accent2);cursor:pointer;border:3px solid var(--bg);
+  }
+  .hint{font-size:11px;color:var(--dim);line-height:1.6;margin-top:8px}
+
+  /* 数据行 */
+  .kv{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid var(--line)}
+  .kv:last-child{border-bottom:none}
+  .kv span:last-child{color:var(--text);font-variant-numeric:tabular-nums}
+  .kv span:first-child{color:var(--dim)}
+
+  /* 调试面板 */
+  #debug{display:none}
+  #debug.show{display:block}
+
+  /* 结果提示 */
+  .toast{
+    position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(80px);
+    background:var(--card2);border:1px solid var(--line);
+    padding:12px 20px;border-radius:12px;font-size:13px;
+    box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:99;
+    transition:transform .28s cubic-bezier(.3,1.4,.5,1);pointer-events:none;
+    max-width:90vw;text-align:center;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .warn-box{
+    background:rgba(240,163,58,.1);border:1px solid rgba(240,163,58,.35);
+    color:#f5c77e;font-size:12px;padding:11px 13px;border-radius:10px;line-height:1.65;
+  }
+  .ok-box{
+    background:rgba(49,209,124,.1);border:1px solid rgba(49,209,124,.32);
+    color:#7fe0ac;font-size:12px;padding:11px 13px;border-radius:10px;line-height:1.65;
+  }
+</style>
 </head>
 <body>
+<div class="wrap">
 
-<header class="topbar">
-  <div class="brand">
-    <span class="logo" aria-hidden="true">
-      <svg viewBox="0 0 100 100" width="30" height="30"><rect width="100" height="100" rx="24" fill="var(--primary)"/><path d="M50 24v13M50 63v13M24 50h13M63 50h13" stroke="#fff" stroke-width="10" stroke-linecap="round"/><circle cx="50" cy="50" r="11" fill="#fff"/></svg>
-    </span>
-    <div class="brand-text">
-      <h1>医刊速递</h1>
-      <span>MedFeeds · 生物医学期刊 RSS 聚合</span>
+  <header>
+    <h1>深蹲计数器</h1>
+    <p>手机放裤兜 · 陀螺仪自动计数 · 写入 Apple 健康</p>
+  </header>
+
+  <!-- 授权 -->
+  <div class="card" id="authCard">
+    <h2>第 1 步 · 授权传感器</h2>
+    <div id="authInfo">
+      <div class="warn-box" id="envWarn" style="display:none;margin-bottom:12px"></div>
+      <p class="hint" style="margin:0 0 12px">
+        必须通过 <b>HTTPS</b> 打开本页，并点击下方按钮授权动作权限，
+        网页才能读到加速度计数据。
+      </p>
+      <button class="btn" id="btnAuth">授权动作传感器</button>
+    </div>
+    <div id="authOk" style="display:none">
+      <div class="ok-box">传感器已就绪，可以开始计数。</div>
     </div>
   </div>
 
-  <nav class="tabs" id="tabs">
-    <button data-view="feed" class="active">最新文章</button>
-    <button data-view="market">发现期刊</button>
-    <button data-view="subs">我的订阅<span id="subsBadge" class="badge-count hidden">0</span></button>
-  </nav>
-
-  <div class="topbar-right">
-    <div class="search-box">
-      <svg viewBox="0 0 24 24" width="15" height="15"><path fill="none" stroke="currentColor" stroke-width="2" d="M21 21l-4.3-4.3M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z"/></svg>
-      <input id="searchInput" type="search" placeholder="搜索标题 / 摘要 / 期刊…">
+  <!-- 主计数区 -->
+  <div class="card">
+    <div class="counter">
+      <div class="count-num" id="countNum">0</div>
+      <div class="count-label">次深蹲</div>
+      <div class="meta-row">
+        <div>时长 <b id="dur">0:00</b></div>
+        <div>节奏 <b id="tempo">--</b></div>
+      </div>
     </div>
-    <button id="refreshBtn" class="btn primary" title="拉取所有订阅源的最新文章">
-      <svg viewBox="0 0 24 24" width="15" height="15" class="spin-target"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M20 12a8 8 0 10-2.3 5.7M20 12v6M20 12h-6"/></svg>
-      <span>刷新</span>
-    </button>
+
+    <div style="margin-top:18px">
+      <button class="btn" id="btnStart">开始计数</button>
+      <div class="btn-row">
+        <button class="btn ghost" id="btnMinus" style="flex:1">−  减一次</button>
+        <button class="btn ghost" id="btnPlus"  style="flex:1">＋  加一次</button>
+      </div>
+    </div>
+
+    <div class="status">
+      <span class="dot" id="dot"></span>
+      <span id="statusText">未开始</span>
+    </div>
   </div>
-</header>
 
-<main>
-  <!-- ===== 最新文章 ===== -->
-  <section id="view-feed" class="view active">
-    <aside class="sidebar" id="sidebar">
-      <div class="side-group">
-        <button class="side-item" data-filter="all"><span class="ic">☰</span>全部文章<b id="cnt-all">0</b></button>
-        <button class="side-item" data-filter="unread"><span class="ic">●</span>未读<b id="cnt-unread">0</b></button>
-        <button class="side-item" data-filter="starred"><span class="ic">★</span>收藏<b id="cnt-starred">0</b></button>
-      </div>
-      <div class="side-divider">按期刊筛选</div>
-      <div class="side-group" id="journalFilterList"></div>
-      <div class="side-divider">状态</div>
-      <div class="side-status" id="sideStatus"></div>
-    </aside>
-
-    <div class="content">
-      <div class="toolbar">
-        <label class="chk"><input type="checkbox" id="onlyUnread"> 只看未读</label>
-        <span class="muted" id="lastRefresh"></span>
-        <span class="spacer"></span>
-        <button id="markAllReadBtn" class="btn ghost sm">全部已读</button>
-      </div>
-      <div id="articleList" class="articles"></div>
-    </div>
-  </section>
-
-  <!-- ===== 发现期刊 ===== -->
-  <section id="view-market" class="view">
-    <div class="market">
-      <div class="section-head">
-        <h2>发现期刊</h2>
-        <span class="muted" id="marketCount"></span>
-      </div>
-      <div class="chips" id="categoryChips"></div>
-      <div id="journalGrid" class="cards"></div>
-
-      <div class="custom-add">
-        <h3>添加自定义订阅</h3>
-        <div class="add-row">
-          <input id="rssUrlInput" type="url" placeholder="粘贴任意 RSS / Atom 链接，如 https://www.nature.com/nature.rss">
-          <button class="btn primary" id="addRssBtn">添加 RSS 源</button>
-        </div>
-        <div class="add-row">
-          <input id="pubmedInput" type="text" placeholder="按 PubMed 期刊名添加（NLM 标准缩写最佳），如 Circulation、Nat Commun、J Hepatol">
-          <button class="btn primary" id="addPubmedBtn">按 PubMed 添加</button>
-        </div>
-        <p class="hint">💡 PubMed 收录 3 万余种生物医学期刊——上表没有的期刊，都可以用期刊名订阅；任何站点只要有 RSS 输出也都能添加。</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== 我的订阅 ===== -->
-  <section id="view-subs" class="view">
-    <div class="subs">
-      <div class="section-head">
-        <h2>我的订阅</h2>
-        <span class="muted" id="subsCount"></span>
-      </div>
-      <div id="subsList" class="cards"></div>
-
-      <div class="settings">
-        <h3>偏好设置</h3>
-        <div class="setting-row">
-          <div>
-            <b>自动刷新</b>
-            <p class="hint">定时自动拉取最新文章</p>
-          </div>
-          <select id="autoRefreshSel">
-            <option value="0">关闭</option>
-            <option value="15">每 15 分钟</option>
-            <option value="30">每 30 分钟</option>
-            <option value="60">每 1 小时</option>
-            <option value="180">每 3 小时</option>
-          </select>
-        </div>
-        <div class="setting-row">
-          <div>
-            <b>每刊拉取条数</b>
-            <p class="hint">每次刷新每个期刊保留的最新文章数</p>
-          </div>
-          <select id="limitSel">
-            <option value="10">10 条</option>
-            <option value="15">15 条</option>
-            <option value="20">20 条</option>
-            <option value="30">30 条</option>
-          </select>
-        </div>
-        <div class="setting-row">
-          <div>
-            <b>新文章桌面通知</b>
-            <p class="hint">有新文章到达时弹出系统通知</p>
-          </div>
-          <label class="switch"><input type="checkbox" id="notifyChk"><span class="slider"></span></label>
-        </div>
-
-        <h3>数据管理</h3>
-        <div class="setting-row">
-          <div>
-            <b>OPML 导出</b>
-            <p class="hint">导出为标准 OPML，可导入 Feedly / Inoreader 等任何 RSS 阅读器</p>
-          </div>
-          <button class="btn ghost" id="exportOpmlBtn">导出 .opml</button>
-        </div>
-        <div class="setting-row">
-          <div>
-            <b>OPML 导入</b>
-            <p class="hint">从其他阅读器的 OPML 备份恢复订阅</p>
-          </div>
-          <label class="btn ghost file-label">选择文件<input type="file" id="opmlFile" accept=".opml,.xml" hidden></label>
-        </div>
-        <div class="setting-row danger-row">
-          <div>
-            <b>清空本地数据</b>
-            <p class="hint">删除全部订阅、已读与收藏记录（不可恢复）</p>
-          </div>
-          <button class="btn danger" id="wipeBtn">清空</button>
-        </div>
-      </div>
-    </div>
-  </section>
-</main>
-
-<!-- 期刊预览弹窗 -->
-<div id="modal" class="modal hidden">
-  <div class="modal-box">
-    <div class="modal-head">
-      <h3 id="modalTitle">预览</h3>
-      <button class="modal-close" id="modalCloseBtn" aria-label="关闭">×</button>
-    </div>
-    <div class="modal-body" id="modalBody"></div>
+  <!-- 波形 -->
+  <div class="card">
+    <h2>实时波形</h2>
+    <canvas id="wave"></canvas>
+    <p class="hint">
+      曲线是竖直方向的加速度。每完成一次深蹲会出现一个完整的波谷→波峰。
+      如果曲线几乎是平的，说明传感器没读到数据或手机放置方向不对。
+    </p>
   </div>
+
+  <!-- 参数 -->
+  <div class="card">
+    <h2>灵敏度调节</h2>
+
+    <div class="param">
+      <div class="param-head"><span>触发阈值</span><span id="vThr">0.18</span></div>
+      <input type="range" id="sThr" min="6" max="45" value="18">
+      <p class="hint">数不上就调小，数多了就调大。</p>
+    </div>
+
+    <div class="param">
+      <div class="param-head"><span>防抖间隔</span><span id="vDeb">1.0 秒</span></div>
+      <input type="range" id="sDeb" min="4" max="20" value="10">
+      <p class="hint">两次计数之间的最小间隔，防止一次深蹲被数成两次。</p>
+    </div>
+
+    <div class="param">
+      <div class="param-head"><span>平滑度</span><span id="vSm">0.25</span></div>
+      <input type="range" id="sSm" min="5" max="60" value="25">
+      <p class="hint">越大越灵敏但越容易误判，越小越稳但可能漏计。</p>
+    </div>
+
+    <div class="param">
+      <div class="param-head"><span>检测轴</span><span id="vAxis">Y</span></div>
+      <input type="range" id="sAxis" min="0" max="2" value="1">
+      <p class="hint">手机在裤兜里的朝向不同，需要换轴。数不上时挨个试。</p>
+    </div>
+
+    <div style="margin-top:6px">
+      <button class="btn ghost" id="btnDebug">显示原始数据</button>
+      <div id="debug" class="hint" style="font-family:ui-monospace,Menlo,monospace;font-size:11px;margin-top:10px">
+        等待数据…
+      </div>
+    </div>
+  </div>
+
+  <!-- 写入健康 -->
+  <div class="card">
+    <h2>第 3 步 · 写入 Apple 健康</h2>
+    <div class="kv"><span>深蹲次数</span><span id="sumCount">0</span></div>
+    <div class="kv"><span>训练时长</span><span id="sumDur">0 分钟</span></div>
+    <div class="kv"><span>记录时间</span><span id="sumTime">--</span></div>
+
+    <div style="margin-top:14px">
+      <button class="btn" id="btnSave">写入 Apple 健康</button>
+    </div>
+    <p class="hint">
+      点击后会跳到「快捷指令」App 完成写入。请先按下方说明创建好名为
+      <b>记录深蹲</b> 的快捷指令并添加到主屏幕。
+    </p>
+  </div>
+
+  <!-- 使用说明 -->
+  <div class="card">
+    <h2>怎么用</h2>
+    <ol class="hint" style="padding-left:18px;margin:0">
+      <li>用 Safari 打开本页（首次需允许动作权限）</li>
+      <li>手机竖放塞进裤兜，点「开始计数」</li>
+      <li>开始做深蹲，屏幕上数字会实时跳动</li>
+      <li>做完点「停止」，核对次数</li>
+      <li>点「写入 Apple 健康」→ 自动跳转快捷指令完成记录</li>
+    </ol>
+    <p class="hint" style="margin-top:12px">
+      本页所有数据处理都在手机本地完成，不会上传到任何服务器。
+      页面一旦关闭或切到后台，计数会停止。
+    </p>
+  </div>
+
 </div>
 
-<div id="toast" class="toast hidden"></div>
+<div class="toast" id="toast"></div>
 
-<script src="/app.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* ═══════════════════════ 状态 ═══════════════════════ */
+const S = {
+  running:false,
+  count:0,
+  startTime:null,
+  endTime:null,
+  pausedAt:null,
+  lastCountTime:0,
+  phase:'up',
+  filtered:0,
+  samples:[],
+  lastMotionAt:0,
+  permission:false,
+};
+const MAX_SAMPLES = 300;
+
+/* ═══════════════════════ 参数 ═══════════════════════ */
+const P = { threshold:0.18, debounce:1000, smoothing:0.25, axis:1 };
+const AXES = ['X','Y','Z'];
+
+/* ═══════════════════════ DOM ═══════════════════════ */
+const $ = id => document.getElementById(id);
+const el = {
+  countNum:$('countNum'), dur:$('dur'), tempo:$('tempo'),
+  btnAuth:$('btnAuth'), authInfo:$('authInfo'), authOk:$('authOk'), envWarn:$('envWarn'),
+  btnStart:$('btnStart'), btnPlus:$('btnPlus'), btnMinus:$('btnMinus'),
+  dot:$('dot'), statusText:$('statusText'),
+  wave:$('wave'), debug:$('debug'), btnDebug:$('btnDebug'),
+  sumCount:$('sumCount'), sumDur:$('sumDur'), sumTime:$('sumTime'), btnSave:$('btnSave'),
+  toast:$('toast'),
+};
+
+/* ═══════════════════════ 环境检查 ═══════════════════════ */
+const isSecure = location.protocol === 'https:' ||
+                 location.hostname === 'localhost' ||
+                 location.hostname === '127.0.0.1';
+
+if(!isSecure){
+  el.envWarn.style.display = 'block';
+  el.envWarn.innerHTML = '当前是 HTTP 环境，iOS 会直接拒绝传感器授权。<br>' +
+    '请改用 HTTPS 地址打开，或通过 localhost 访问。';
+}
+
+const hasMotionAPI = typeof DeviceMotionEvent !== 'undefined';
+const needsPermission = hasMotionAPI &&
+                        typeof DeviceMotionEvent.requestPermission === 'function';
+
+if(!hasMotionAPI){
+  el.envWarn.style.display = 'block';
+  el.envWarn.textContent = '当前浏览器不支持 DeviceMotionEvent，请改用 Safari 打开。';
+}
+
+/* ═══════════════════════ 计数算法 ═══════════════════════
+   与原生 Swift 版逻辑一致：
+   低通滤波 → 状态机检测 下蹲/站起 相位 → 完整周期计 1 次
+
+   注意：真实传感器是 50Hz 连续流，低通滤波才有意义。
+   但采样可能因丢帧变稀疏，所以这里对滤波系数做上限保护：
+   每次采样至少吃掉 30% 的新数据，保证信号不会被"拖死"。
+*/
+function resetDetector(){
+  S.phase = 'up';
+  S.filtered = 0;
+  S.samples = [];
+  S.lastCountTime = 0;
+}
+
+// 实际生效的滤波系数：不低于 0.3，避免稀疏采样时信号爬不动
+function effectiveSmoothing(){
+  return Math.max(0.3, P.smoothing);
+}
+
+function feedSample(raw){
+  const k = effectiveSmoothing();
+  S.filtered = S.filtered * (1 - k) + raw * k;
+  const v = S.filtered;
+
+  // 迟滞判定：越过阈值才算进入相位，回落到一半才释放
+  // 这样可以防止在阈值附近抖动导致重复计数
+  const hi = P.threshold;
+
+  if (S.phase === 'up' && v < -hi) {
+    S.phase = 'down';
+  } else if (S.phase === 'down' && v > hi) {
+    const now = Date.now();
+    if (now - S.lastCountTime >= P.debounce) {
+      S.lastCountTime = now;
+      addCount(1);
+    }
+    S.phase = 'up';
+  }
+}
+
+function addCount(n){
+  if(!S.running) return;
+  S.count = Math.max(0, S.count + n);
+  render();
+  if(n > 0){
+    el.countNum.classList.add('hit');
+    setTimeout(()=>el.countNum.classList.remove('hit'), 140);
+    if(navigator.vibrate) try{ navigator.vibrate(18); }catch(e){}
+  }
+  updateTempo();
+}
+
+/* ═══════════════════════ 渲染 ═══════════════════════ */
+function fmtDur(ms){
+  const t = Math.max(0, Math.floor(ms/1000));
+  return Math.floor(t/60) + ':' + String(t%60).padStart(2,'0');
+}
+
+function render(){
+  el.countNum.textContent = S.count;
+  el.sumCount.textContent = S.count;
+  if(S.startTime){
+    const end = S.endTime || Date.now();
+    el.dur.textContent = fmtDur(end - S.startTime);
+  }
+}
+
+/* 训练净时长（秒）：总时长减去暂停时间 */
+function activeSeconds(){
+  if(!S.startTime) return 0;
+  let ms = (S.pausedAt || S.endTime || Date.now()) - S.startTime;
+  return Math.max(1, Math.round(ms/1000));
+}
+
+let tempoTimer = null;
+function updateTempo(){
+  clearInterval(tempoTimer);
+  const tick = ()=>{
+    if(!S.running) return;
+    const sec = (Date.now() - S.startTime)/1000;
+    if(sec > 4 && S.count > 0){
+      const perMin = S.count / (sec/60);
+      el.tempo.textContent = Math.round(perMin) + ' 次/分';
+    }
+  };
+  tick();
+  tempoTimer = setInterval(tick, 1000);
+}
+
+function setStatus(text, cls){
+  el.statusText.textContent = text;
+  el.dot.className = 'dot' + (cls ? ' ' + cls : '');
+}
+
+let toastTimer;
+function toast(msg, ms){
+  el.toast.textContent = msg;
+  el.toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.toast.classList.remove('show'), ms || 2600);
+}
+
+/* ═══════════════════════ 波形绘制 ═══════════════════════ */
+const ctx = el.wave.getContext('2d');
+function sizeCanvas(){
+  const r = el.wave.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  el.wave.width = r.width * dpr;
+  el.wave.height = r.height * dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+sizeCanvas();
+window.addEventListener('resize', sizeCanvas);
+
+function drawWave(){
+  const r = el.wave.getBoundingClientRect();
+  const W = r.width, H = r.height;
+  ctx.clearRect(0,0,W,H);
+
+  const mid = H/2;
+  const range = Math.max(0.6, P.threshold * 3);
+
+  // 中线
+  ctx.strokeStyle = '#2b323f';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0,mid); ctx.lineTo(W,mid); ctx.stroke();
+
+  // 阈值线
+  ctx.strokeStyle = 'rgba(240,163,58,.45)';
+  ctx.setLineDash([4,4]);
+  [mid - (P.threshold/range)*(H/2), mid + (P.threshold/range)*(H/2)].forEach(y=>{
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+  });
+  ctx.setLineDash([]);
+
+  if(S.samples.length < 2){ requestAnimationFrame(drawWave); return; }
+
+  // 波形
+  const n = S.samples.length;
+  const stepX = W / (MAX_SAMPLES - 1);
+  const offX = W - (n-1)*stepX;
+
+  ctx.beginPath();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#31d17c';
+  ctx.lineJoin = 'round';
+  S.samples.forEach((v,i)=>{
+    const x = offX + i*stepX;
+    const y = mid - Math.max(-1,Math.min(1, v/range)) * (H/2 - 4);
+    i ? ctx.lineTo(x,y) : ctx.moveTo(x,y);
+  });
+  ctx.stroke();
+
+  requestAnimationFrame(drawWave);
+}
+requestAnimationFrame(drawWave);
+
+/* ═══════════════════════ 传感器 ═══════════════════════ */
+function readAxis(acc){
+  if(!acc) return null;
+  const v = P.axis === 0 ? acc.x : P.axis === 1 ? acc.y : acc.z;
+  return (typeof v === 'number' && isFinite(v)) ? v : null;
+}
+
+function onMotion(e){
+  const acc = e.accelerationIncludingGravity || e.acceleration;
+  const raw = readAxis(acc);
+  if(raw === null) return;
+
+  S.lastMotionAt = Date.now();
+
+  if(S.running){
+    feedSample(raw);
+    S.samples.push(S.filtered);
+    if(S.samples.length > MAX_SAMPLES) S.samples.shift();
+  }
+
+  if(el.debug.classList.contains('show')){
+    el.debug.textContent =
+      `原始(含重力) ${AXES[P.axis]} = ${raw.toFixed(3)} g\n` +
+      `滤波后 = ${S.filtered.toFixed(3)} g\n` +
+      `阈值 = ±${P.threshold.toFixed(2)} g\n` +
+      `相位 = ${S.phase}\n` +
+      `计数 = ${S.count}`;
+  }
+}
+
+async function requestPermission(){
+  if(!hasMotionAPI){
+    toast('此浏览器不支持动作传感器');
+    return false;
+  }
+  if(needsPermission){
+    try{
+      const res = await DeviceMotionEvent.requestPermission();
+      if(res !== 'granted'){
+        toast('授权被拒绝，请在 设置 → Safari → 动作与方向 中开启');
+        setStatus('未授权', 'err');
+        return false;
+      }
+    }catch(err){
+      toast('授权失败：' + err.message);
+      return false;
+    }
+  }
+  window.addEventListener('devicemotion', onMotion);
+  S.permission = true;
+  return true;
+}
+
+el.btnAuth.addEventListener('click', async ()=>{
+  if(!isSecure){
+    toast('HTTP 环境下无法授权，请用 HTTPS 打开');
+    return;
+  }
+  el.btnAuth.disabled = true;
+  el.btnAuth.textContent = '正在请求授权…';
+  const ok = await requestPermission();
+  el.btnAuth.disabled = false;
+  el.btnAuth.textContent = '授权动作传感器';
+  if(ok){
+    el.authInfo.style.display = 'none';
+    el.authOk.style.display = 'block';
+    setStatus('传感器就绪', 'on');
+    toast('授权成功');
+  }
+});
+
+/* ═══════════════════════ 开始 / 停止 ═══════════════════════ */
+el.btnStart.addEventListener('click', ()=>{
+  if(!S.running) startSession(); else stopSession();
+});
+
+function startSession(){
+  if(!S.permission){
+    toast('请先完成第 1 步授权');
+    el.btnAuth.scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+  // 每次点「开始」都是全新一次训练，计数与计时全部归零
+  S.resuming = false;
+  S.count = 0;
+  S.startTime = Date.now();
+  S.endTime = null;
+  S.pausedAt = null;
+  S.samples = [];
+  resetDetector();
+
+  S.running = true;
+  el.btnStart.textContent = '停止计数';
+  el.btnStart.classList.add('stop');
+  setStatus('计数中，把手机放进裤兜', 'on');
+  render(); updateTempo();
+
+  // 检查传感器是否真的在喂数据
+  setTimeout(()=>{
+    if(S.running && Date.now() - S.lastMotionAt > 2500){
+      setStatus('没收到传感器数据，检查权限或换轴', 'err');
+    }
+  }, 2600);
+}
+
+function stopSession(){
+  if(S.count === 0){
+    toast('还没数到深蹲，继续加油');
+    return;
+  }
+  S.running = false;
+  S.endTime = Date.now();
+  clearInterval(tempoTimer);
+
+  el.btnStart.textContent = '重新开始';
+  el.btnStart.classList.remove('stop');
+  setStatus('已停止，可核对次数后写入健康');
+
+  const sec = Math.round((S.endTime - S.startTime)/1000);
+  el.sumDur.textContent = fmtDur(sec) + '（' + Math.max(1, Math.round(sec/60)) + ' 分钟）';
+  el.sumTime.textContent = new Date().toLocaleString('zh-CN',
+    {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
+
+  // 节奏按「本次计数 / 本次净时长」算，不受暂停影响
+  if(sec > 0 && S.count > 0){
+    el.tempo.textContent = Math.round(S.count / (sec/60)) + ' 次/分';
+  }
+
+  render();
+
+  // 记录暂停时刻，恢复时把这段从训练时长里扣除
+  S.pausedAt = S.endTime;
+}
+
+el.btnPlus.addEventListener('click', ()=>{
+  S.count++; render();
+  toast('已修正为 ' + S.count + ' 次', 1200);
+});
+el.btnMinus.addEventListener('click', ()=>{
+  if(S.count === 0) return;
+  S.count--; render();
+  toast('已修正为 ' + S.count + ' 次', 1200);
+});
+
+/* ═══════════════════════ 参数绑定 ═══════════════════════ */
+function bind(sliderId, labelId, fn, fmt){
+  const s = $(sliderId), l = $(labelId);
+  const apply = ()=>{ const v = fn(+s.value); l.textContent = fmt(v); };
+  s.addEventListener('input', ()=>{ apply(); });
+  apply();
+}
+
+bind('sThr','vThr', v => { P.threshold = v/100; return P.threshold; },
+     v => v.toFixed(2));
+bind('sDeb','vDeb', v => { P.debounce = v*100; return P.debounce; },
+     v => (v/1000).toFixed(1)+' 秒');
+bind('sSm','vSm',  v => { P.smoothing = v/100; return P.smoothing; },
+     v => v.toFixed(2));
+bind('sAxis','vAxis', v => {
+  P.axis = v;
+  S.samples = []; resetDetector();
+  return v;
+}, v => AXES[v]);
+
+/* ═══════════════════════ 调试面板 ═══════════════════════ */
+el.btnDebug.addEventListener('click', ()=>{
+  const on = el.debug.classList.toggle('show');
+  el.btnDebug.textContent = on ? '隐藏原始数据' : '显示原始数据';
+});
+
+/* ═══════════════════════ 写入健康：调用快捷指令 ═══════════════════════ */
+const SHORTCUT_NAME = '记录深蹲';
+
+el.btnSave.addEventListener('click', ()=>{
+  if(S.count === 0){
+    toast('没有可写入的数据');
+    return;
+  }
+
+  const end = S.endTime || Date.now();
+  const start = S.startTime || end;
+
+  // 传给快捷指令的载荷（duration 用净训练时长）
+  const payload = {
+    count: S.count,
+    duration: activeSeconds(),
+    start: new Date(start).toISOString(),
+    end: new Date(end).toISOString(),
+  };
+  const text = JSON.stringify(payload);
+
+  const url = 'shortcuts://run-shortcut'
+    + '?name=' + encodeURIComponent(SHORTCUT_NAME)
+    + '&input=text'
+    + '&text=' + encodeURIComponent(text);
+
+  toast('正在跳转到快捷指令…', 1800);
+
+  // 主方案：URL Scheme 直达
+  try{
+    window.location.href = url;
+  }catch(e){
+    // 兜底：复制到剪贴板，手动运行快捷指令
+    fallbackCopy(text);
+    return;
+  }
+
+  // 若 2 秒后仍在当前页，说明 Scheme 没被拦截，走兜底
+  const t0 = Date.now();
+  setTimeout(()=>{
+    if(Date.now() - t0 < 2600 && !document.hidden){
+      fallbackCopy(text);
+    }
+  }, 2000);
+});
+
+function fallbackCopy(text){
+  const done = ()=>{
+    toast('已复制数据。请打开快捷指令运行「' + SHORTCUT_NAME + '」', 5000);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>legacyCopy(text, done));
+  }else{
+    legacyCopy(text, done);
+  }
+}
+function legacyCopy(text, cb){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select();
+  try{ document.execCommand('copy'); cb(); }
+  catch(e){ toast('复制失败，请手动记录 ' + S.count + ' 次'); }
+  document.body.removeChild(ta);
+}
+
+/* ═══════════════════════ 页面可见性 ═══════════════════════ */
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden && S.running){
+    setStatus('页面在后台，计数已暂停', 'err');
+  }else if(!document.hidden && S.running){
+    setStatus('计数中，把手机放进裤兜', 'on');
+  }
+});
+
+/* 初始化 */
+render();
+})();
+</script>
 </body>
 </html>
